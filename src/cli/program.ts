@@ -192,6 +192,22 @@ async function commandCheckpoint(bundle: RuntimeBundle, kind: "undo" | "redo"): 
 }
 
 async function runTui(bundle: RuntimeBundle, parsed: ParsedArgs): Promise<number> {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    process.stderr.write(
+      [
+        "",
+        "Axiom's interactive TUI needs a real terminal (stdin/stdout must be a TTY).",
+        "",
+        "  · to run a single prompt:  axiom -p \"your prompt\"",
+        "  · for CI / scripts:        axiom -p \"...\" --output-format json",
+        "  · inside this shell:       start a normal terminal and run `axiom`",
+        "",
+      ].join("\n")
+    );
+    await shutdown(bundle);
+    return 2;
+  }
+
   await resolveSessionStart(bundle, parsed);
   await bundle.mcp.connectAll().catch(() => undefined);
 

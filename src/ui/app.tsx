@@ -13,7 +13,7 @@ import { ThemeContext, getTheme, ACCENT_NAMES } from "./theme.js";
 import type { AccentName } from "./theme.js";
 import { CompletedMessages, StreamingMessage } from "./components/message-list.js";
 import { InputPanel } from "./components/input-panel.js";
-import { StatusBar, HintLine, ModeBanner } from "./components/status-bar.js";
+import { StatusBar, ActivityLine, ModeBanner } from "./components/status-bar.js";
 import { PermissionDialog, NoticeLine } from "./components/dialogs.js";
 import { OverlayPicker, HelpOverlay } from "./components/overlay-picker.js";
 import type { PickerOption } from "./components/overlay-picker.js";
@@ -157,8 +157,18 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
   }, [agent, refreshFileIndex, runtime.sessionId, sessions]);
 
   const pushCommandNotice = useCallback((level: "info" | "warn" | "error", text: string) => {
-    setCommandNotices((current) => [...current.slice(-4), { level, text }]);
+    const firstLine = text.split("\n")[0];
+    setCommandNotices((current) => {
+      const previous = current[current.length - 1];
+      if (previous && previous.level === level && previous.text === firstLine) return current;
+      return [...current.slice(-3), { level, text: firstLine }];
+    });
   }, []);
+
+  useEffect(() => {
+    if (!bus.latestNotice) return;
+    pushCommandNotice(bus.latestNotice.level, bus.latestNotice.text);
+  }, [bus.latestNotice, pushCommandNotice]);
 
   const openModelPicker = useCallback(() => setOverlay({ kind: "model" }), []);
   const openSessions = useCallback(() => setOverlay({ kind: "sessions" }), []);
@@ -493,12 +503,12 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
           />
         ) : null}
 
-        {bus.latestNotice ? <NoticeLine level={bus.latestNotice.level} text={bus.latestNotice.text} /> : null}
         {commandNotices.map((entry, index) => (
-          <NoticeLine key={`${index}_${entry.text}`} level={entry.level} text={entry.text.split("\n")[0]} />
+          <NoticeLine key={`${index}_${entry.text}`} level={entry.level} text={entry.text} />
         ))}
 
         <ModeBanner mode={mode} />
+        <ActivityLine status={bus.status} />
 
         <InputPanel
           busy={bus.status !== "idle"}
@@ -525,22 +535,20 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
           overlayOpen={overlay.kind !== "none"}
         />
 
-        <Box marginTop={0}>
-          <StatusBar
-            status={bus.status}
-            mode={mode}
-            model={modelInfo}
-            providerLabel={providerLabel}
-            usedTokens={bus.usage.inputTokens + bus.usage.cacheReadTokens}
-            totalTokens={bus.usage.inputTokens}
-            costUSD={bus.costUSD}
-            queueDepth={bus.queueDepth}
-            mcpCount={Object.keys(config.loadGlobalSync().mcp).length}
-            todos={bus.todos}
-          />
-        </Box>
-
-        <HintLine text="esc stop · shift+tab mode · / commands · @ files · ctrl+c twice quits" />
+        <StatusBar
+          status={bus.status}
+          mode={mode}
+          model={modelInfo}
+          providerLabel={providerLabel}
+          usedTokens={bus.usage.inputTokens + bus.usage.cacheReadTokens}
+          totalTokens={bus.usage.inputTokens}
+          costUSD={bus.costUSD}
+          queueDepth={bus.queueDepth}
+          mcpCount={Object.keys(config.loadGlobalSync().mcp).length}
+          todos={bus.todos}
+          cwd={paths.projectRoot}
+          errorText={bus.status === "error" ? (commandNotices[commandNotices.length - 1]?.text ?? "error") : null}
+        />
 
         {permissionRequestFromBus === null ? null : <PermissionGateFallback />}
       </Box>
@@ -552,16 +560,31 @@ function PermissionGateFallback(): React.ReactElement | null {
   return null;
 }
 
+const AXIOM_BANNER = [
+  " \u2554\u2550\u2557\u256d\u2500\u256e\u250c\u2500\u2510\u2554\u2550\u2563\u2554\u2500\u2568",
+  " \u255a\u2550\u2557\u255a\u2550\u255d \u2502 \u2551\u2554\u255d\u2550\u2563\u2554\u2550\u256e",
+  " \u255a\u2550\u2569\u2550\u2550\u2569 \u2569 \u255a\u2550\u255d\u2550\u2550\u2569\u255a\u2550\u255d"
+].join("\n");
+
 function WelcomeHeader({ visible, subtitle }: { visible: boolean; subtitle: string }): React.ReactElement | null {
   const { theme } = useThemeSafe();
   if (!visible) return null;
 
   return (
-    <Box borderStyle="round" borderColor={theme.accentDim} paddingX={2} paddingY={0} marginBottom={1}>
-      <Text bold color={theme.accentBright}>
-        ◆ AXIOM
-      </Text>
-      <Text dimColor> — {subtitle}</Text>
+    <Box flexDirection="column" paddingLeft={2} paddingTop={0} paddingBottom={1}>
+      <Text color={theme.accent}>{AXIOM_BANNER}</Text>
+      <Box marginTop={0}>
+        <Text dimColor>
+          v0.1.0 · {subtitle}
+        </Text>
+      </Box>
+      <Box>
+        <Text dimColor>
+          {" "}
+          type your request · <Text color={theme.textSecondary}>/</Text> commands ·{" "}
+          <Text color={theme.textSecondary}>@</Text> files · <Text color={theme.textSecondary}>shift+tab</Text> modes
+        </Text>
+      </Box>
     </Box>
   );
 }
@@ -599,7 +622,7 @@ function ModelPickerOverlay(props: ModelPickerOverlayProps): React.ReactElement 
       const value = `${group.providerId}/${model.id}`;
       options.push({
         label: value,
-        hint: `${model.label}${model.recommended ? " ★" : ""} · ctx ${Math.round(model.contextWindow / 1000)}k`,
+        hint: `${model.label} · ${Math.round(model.contextWindow / 1000)}k${model.recommended ? "  ★" : ""}`,
         value
       });
     }

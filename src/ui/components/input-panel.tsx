@@ -276,31 +276,39 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
   const renderedInput = useMemo(() => renderWithCursor(value, cursor), [value, cursor]);
 
   const showBusyLine = props.busy && !props.waitingPermission;
+  const borderless = true;
+  void borderless;
 
   return (
     <Box flexDirection="column">
       {popup ? (
-        <Box flexDirection="column" marginBottom={0}>
+        <Box flexDirection="column" paddingLeft={1}>
           {popup.items.map((item, index) => (
-            <Box key={`${item.label}_${index}`} paddingLeft={index === popup.selected ? 0 : 2}>
-              <Text color={index === popup.selected ? theme.accentBright : theme.textSecondary}>
-                {index === popup.selected ? "▸ " : "  "}
+            <Box key={`${item.label}_${index}`} width="100%" justifyContent="space-between">
+              <Text color={index === popup.selected ? theme.accentBright : theme.textSecondary} bold={index === popup.selected}>
+                {index === popup.selected ? "› " : "  "}
                 {item.label}
               </Text>
-              {item.hint ? <Text dimColor> {item.hint}</Text> : null}
+              {item.hint ? <Text color={index === popup.selected ? theme.textSecondary : theme.textFaint}>{item.hint}</Text> : null}
             </Box>
           ))}
           <Text dimColor> tab/enter complete · esc dismiss</Text>
         </Box>
       ) : null}
 
-      <Box borderStyle="round" borderColor={props.waitingPermission ? theme.warning : props.busy ? theme.borderActive : theme.border} paddingX={1}>
+      {props.waitingPermission ? (
+        <Box paddingLeft={1}>
+          <Text color={theme.warning}>… resolve the approval above</Text>
+        </Box>
+      ) : null}
+
+      <Box paddingLeft={1} paddingRight={1}>
         <Box width="100%" flexDirection="row" flexWrap="wrap">
-          <Text color={theme.accentBright} bold>
-            {"› "}
+          <Text color={props.waitingPermission ? theme.warning : theme.accentBright} bold>
+            {"> "}
           </Text>
           {value.length === 0 && !showBusyLine ? (
-            <Text dimColor>{props.placeholder ?? "Ask anything… (/commands · @files)"}</Text>
+            <Text dimColor>{props.placeholder ?? "ask anything"}</Text>
           ) : (
             <Text wrap="wrap">{renderedInput}</Text>
           )}
@@ -311,10 +319,10 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
         <Box paddingLeft={2} gap={1} flexWrap="wrap">
           {props.attachments.map((chip) => (
             <Text key={chip.id} color={theme.info}>
-              [{chip.kind === "image" ? "🖼" : "≡"} {chip.label}]
+              [{chip.kind === "image" ? "img" : "txt"} {chip.label}]
             </Text>
           ))}
-          <Text dimColor>(esc clears input · they attach on send)</Text>
+          <Text dimColor>(attached on send)</Text>
         </Box>
       ) : null}
     </Box>

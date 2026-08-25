@@ -65,45 +65,54 @@ export function OverlayPicker(props: OverlayPickerProps): React.ReactElement {
   });
 
   const start = Math.max(Math.min(cursor - Math.floor(visible / 2), filtered.length - visible), 0);
-  const slice = filtered.slice(start, start + visible);
+  const slice = filtered.slice(Math.max(start, 0), Math.max(start, 0) + visible);
 
   return (
-    <Box
-      flexDirection="column"
-      borderStyle="round"
-      borderColor={theme.overlayBorder}
-      paddingX={1}
-      marginBottom={0}
-    >
-      <Box justifyContent="space-between">
-        <Text bold color={theme.accentBright}>
+    <Box flexDirection="column" paddingLeft={1} paddingRight={1}>
+      <Box justifyContent="space-between" marginBottom={0}>
+        <Text bold color={theme.textPrimary}>
           {props.title}
         </Text>
-        <Text dimColor>
-          {filtered.length} items{props.filterable && filter.length > 0 ? ` · "${filter}"` : ""}
-        </Text>
+        {props.filterable && filter.length > 0 ? (
+          <Text dimColor>/{filter}</Text>
+        ) : null}
       </Box>
 
-      <Box flexDirection="column" marginY={0}>
+      <Box flexDirection="column" marginTop={0} marginBottom={0}>
         {slice.map((option, index) => {
-          const absoluteIndex = start + index;
+          const absoluteIndex = Math.max(start, 0) + index;
           const selected = absoluteIndex === cursor;
+
+          if (!option.hint) {
+            return (
+              <Box key={`${option.value}_${index}`} width="100%">
+                <Text color={selected ? theme.accentBright : theme.textSecondary} bold={selected}>
+                  {selected ? "› " : "  "}
+                  {option.label}
+                </Text>
+              </Box>
+            );
+          }
+
           return (
-            <Box key={`${option.value}_${index}`} paddingLeft={selected ? 0 : 2}>
-              <Text color={selected ? theme.accentBright : theme.textPrimary}>
-                {selected ? "▸ " : "  "}
+            <Box key={`${option.value}_${index}`} width="100%" justifyContent="space-between">
+              <Text color={selected ? theme.accentBright : theme.textSecondary} bold={selected}>
+                {selected ? "› " : "  "}
                 {option.label}
               </Text>
-              {option.hint ? <Text dimColor> {option.hint}</Text> : null}
+              <Text color={selected ? theme.textSecondary : theme.textFaint}>{option.hint}</Text>
             </Box>
           );
         })}
-        {slice.length === 0 ? <Text dimColor> no matches</Text> : null}
+
+        {slice.length === 0 ? <Text dimColor>{"  no matches"}</Text> : null}
       </Box>
 
-      <Text dimColor>
-        ↑↓ navigate · enter select · esc close{props.filterable ? " · type to filter" : ""}
-      </Text>
+      <Box marginTop={0}>
+        <Text dimColor>
+          ↑↓ navigate · enter select{props.filterable ? " · type to filter" : ""} · esc close
+        </Text>
+      </Box>
     </Box>
   );
 }
@@ -127,7 +136,7 @@ export function HelpOverlay(props: HelpOverlayProps): React.ReactElement {
   });
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor={theme.overlayBorder} paddingX={2} paddingY={1}>
+    <Box flexDirection="column" paddingLeft={2} paddingRight={1} paddingY={0}>
       <Text bold color={theme.accentBright}>
         {props.title}
       </Text>
@@ -138,11 +147,9 @@ export function HelpOverlay(props: HelpOverlayProps): React.ReactElement {
             {section.heading}
           </Text>
           {section.entries.map((entry, entryIndex) => (
-            <Box key={entryIndex} gap={2}>
-              <Box width={22}>
-                <Text color={theme.success}>{entry.keys}</Text>
-              </Box>
-              <Text>{entry.description}</Text>
+            <Box key={entryIndex} width="100%" justifyContent="space-between">
+              <Text color={theme.textPrimary}>{entry.description}</Text>
+              <Text color={theme.success}>{entry.keys}</Text>
             </Box>
           ))}
         </Box>

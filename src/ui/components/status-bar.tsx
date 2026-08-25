@@ -19,24 +19,58 @@ export function Spinner({ kind = "dots", color }: { kind?: keyof typeof SPINNER_
   return <Text color={color ?? theme.accentBright}>{variant.frames[frame] ?? "·"}</Text>;
 }
 
-function statusLabel(status: AgentRuntimeStatus): string {
-  switch (status) {
-    case "idle":
-      return "";
-    case "streaming":
-      return "thinking";
-    case "executing_tools":
-      return "tools";
-    case "waiting_permission":
-      return "approval";
-    case "compacting":
-      return "compact";
-    case "error":
-      return "error";
-    case "aborted":
-      return "stopped";
+export function ActivityLine({ status }: { status: AgentRuntimeStatus }): React.ReactElement | null {
+  const { theme } = useTheme();
+
+  if (status === "idle" || status === "error" || status === "aborted") return null;
+
+  const labels: Partial<Record<AgentRuntimeStatus, string>> = {
+    streaming: "thinking",
+    executing_tools: "running tools",
+    waiting_permission: "waiting for approval",
+    compacting: "compacting context"
+  };
+  const label = labels[status];
+  if (!label) return null;
+
+  return (
+    <Box paddingLeft={1} gap={1}>
+      <Spinner />
+      <Text color={theme.textSecondary} italic>
+        {label}… (esc to interrupt)
+      </Text>
+    </Box>
+  );
+}
+
+const MODE_LABELS: Record<PermissionMode, string> = {
+  normal: "build",
+  accept: "accept edits",
+  plan: "plan",
+  bypass: "bypass"
+};
+
+const MODE_COLORS: Record<PermissionMode, string> = {
+  normal: "accent",
+  accept: "success",
+  plan: "info",
+  bypass: "danger"
+};
+
+function modeColorKey(mode: PermissionMode): string {
+  return MODE_COLORS[mode];
+}
+
+function resolveColor(theme: { accent: string; success: string; info: string; danger: string }, key: string): string {
+  switch (key) {
+    case "success":
+      return theme.success;
+    case "info":
+      return theme.info;
+    case "danger":
+      return theme.danger;
     default:
-      return String(status);
+      return theme.accent;
   }
 }
 
@@ -52,6 +86,8 @@ export interface StatusBarProps {
   mcpCount: number;
   todos: TodoItem[];
   sessionTitle?: string;
+  cwd?: string;
+  errorText?: string | null;
 }
 
 export function StatusBar(props: StatusBarProps): React.ReactElement {
@@ -60,116 +96,91 @@ export function StatusBar(props: StatusBarProps): React.ReactElement {
   const gaugeColor =
     gauge.level === "critical" ? theme.gaugeCritical : gauge.level === "warn" ? theme.gaugeWarn : theme.gaugeOk;
 
-  const modeColors: Record<PermissionMode, string> = {
-    normal: theme.textSecondary,
-    accept: theme.success,
-    plan: theme.info,
-    bypass: theme.danger
-  };
-  const modeLabels: Record<PermissionMode, string> = {
-    normal: "NORMAL",
-    accept: "ACCEPT",
-    plan: "PLAN",
-    bypass: "BYPASS"
-  };
+  const modeKey = modeColorKey(props.mode);
 
-  const openTodos = props.todos.filter((todo) => todo.status === "pending" || todo.status === "in_progress");
-  const busy = props.status !== "idle" && props.status !== "error" && props.status !== "aborted";
+  if (props.errorText) {
+    return (
+      <Box flexDirection="column" paddingLeft={1}>
+        <Text color={theme.danger}>✗ {truncate(props.errorText, 96)}</Text>
+      </Box>
+    );
+  }
 
   return (
-    <Box borderStyle="round" borderColor={busy ? theme.borderActive : theme.border} paddingX={1} flexDirection="column" gap={0}>
-      <Box justifyContent="space-between">
+    <Box flexDirection="column" paddingLeft={1} paddingRight={1}>
+      <Box width="100%" justifyContent="space-between">
         <Box gap={1}>
-          {busy ? (
-            <Spinner />
-          ) : (
-            <Text color={props.status === "error" ? theme.danger : theme.success}>{props.status === "error" ? "✗" : "✓"}</Text>
-          )}
-          <Text bold color={statusColor(props.status, theme)}>
-            {statusLabel(props.status).toUpperCase() || "READY"}
-          </Text>
-          {props.queueDepth > 0 ? <Text color={theme.warning}>+{props.queueDepth} queued</Text> : null}
+          <Text color={resolveColor(theme, modeKey)}>⏵⏵ {MODE_LABELS[props.mode]}</Text>
+          <Text dimColor>·</Text>
+          <Text color={theme.textSecondary}>{props.model.id}</Text>
+          {props.queueDepth > 0 ? <Text color={theme.warning}>· +{props.queueDepth} queued</Text> : null}
         </Box>
 
         <Box gap={1}>
-          <Text color={modeColors[props.mode]}>[{modeLabels[props.mode]}]</Text>
-          <Text color={theme.textSecondary}>
-            {props.providerLabel}/{props.model.id}
-          </Text>
+          <Text color={gaugeColor}>{formatTokenCount(props.usedTokens)}</Text>
+          <Text dimColor>({Math.round(gauge.percent)}%)</Text>
+          <Text dimColor>·</Text>
+          <Text color={props.costUSD > 0 ? theme.textSecondary : theme.textFaint}>${formatCost(props.costUSD)}</Text>
         </Box>
       </Box>
 
-      <Box justifyContent="space-between">
-        <Box gap={2}>
-          <Text color={theme.textDim}>
-            in {formatTokenCount(props.totalTokens)}
-          </Text>
-          <Text color={theme.textDim}>${formatCost(props.costUSD)}</Text>
-          {openTodos.length > 0 ? (
-            <Text color={theme.textDim}>
-              tasks {openTodos.filter((t) => t.status === "completed").length}/{openTodos.length}
-            </Text>
-          ) : null}
-          {props.mcpCount > 0 ? <Text color={theme.textFaint}>mcp:{props.mcpCount}</Text> : null}
-        </Box>
-
-        <Box gap={1}>
-          <Text color={gaugeColor}>ctx</Text>
-          <ContextBar percent={gauge.percent} width={16} color={gaugeColor} />
-          <Text color={gaugeColor}>{Math.round(gauge.percent)}%</Text>
-        </Box>
+      <Box width="100%" justifyContent="space-between">
+        <Text dimColor>{props.cwd ? shortenHome(props.cwd) : " "}</Text>
+        <Text dimColor>/ commands</Text>
       </Box>
     </Box>
   );
 }
 
-function ContextBar({ percent, width, color }: { percent: number; width: number; color: string }): React.ReactElement {
-  const clamped = Math.max(0, Math.min(100, percent));
-  const filled = Math.round((clamped / 100) * width);
-  const cells: string[] = [];
-  for (let i = 0; i < filled; i += 1) cells.push("█");
-  for (let i = filled; i < width; i += 1) cells.push("░");
+function truncate(value: string, limit: number): string {
+  const single = value.replace(/\s+/g, " ").trim();
+  return single.length <= limit ? single : `${single.slice(0, limit - 1)}…`;
+}
 
-  return (
-    <Text>
-      <Text color={color}>{cells.slice(0, Math.max(filled, 0)).join("")}</Text>
-      <Text color="gray">{cells.slice(Math.max(filled, 0)).join("")}</Text>
-    </Text>
-  );
+function shortenHome(cwd: string): string {
+  const home = process.env["USERPROFILE"] ?? process.env["HOME"] ?? "";
+  if (home.length > 0 && cwd.toLowerCase().startsWith(home.toLowerCase())) {
+    return `~${cwd.slice(home.length)}`;
+  }
+  return cwd;
 }
 
 export interface HintLineProps {
   text: string;
 }
 
-export function HintLine({ text }: HintLineProps): React.ReactElement {
-  const { theme } = useTheme();
-  return (
-    <Box paddingLeft={1}>
-      <Text dimColor>{text}</Text>
-    </Box>
-  );
+export function HintLine({ text }: HintLineProps): React.ReactElement | null {
+  if (!text) return null;
+  return null;
 }
 
 export function ModeBanner({ mode }: { mode: PermissionMode }): React.ReactElement | null {
   const { theme } = useTheme();
   if (mode === "plan") {
     return (
-      <Box paddingX={1}>
-        <Text bold color={theme.info}>
-          PLAN MODE — the agent reads and plans but changes nothing
-        </Text>
+      <Box paddingLeft={1}>
+        <Text color={theme.info}>plan mode — the agent reads and plans, changing nothing</Text>
       </Box>
     );
   }
   if (mode === "bypass") {
     return (
-      <Box paddingX={1}>
-        <Text bold color={theme.danger}>
-          BYPASS MODE — approvals disabled
-        </Text>
+      <Box paddingLeft={1}>
+        <Text color={theme.danger}>bypass mode — approvals disabled</Text>
       </Box>
     );
   }
   return null;
+}
+
+export function ContextInline({ used, model }: { used: number; model: ModelInfo }): React.ReactElement {
+  const { theme } = useTheme();
+  const gauge = contextGauge(used, model);
+  const color =
+    gauge.level === "critical" ? theme.gaugeCritical : gauge.level === "warn" ? theme.gaugeWarn : theme.gaugeOk;
+  return (
+    <Text color={color}>
+      {formatTokenCount(used)} ({Math.round(gauge.percent)}%)
+    </Text>
+  );
 }
