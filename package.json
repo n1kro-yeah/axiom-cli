@@ -1,0 +1,36 @@
+{
+  "name": "axiom-cli",
+  "version": "0.1.0",
+  "description": "Axiom is a production-grade agentic coding assistant that lives in your terminal.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "axiom": "./bin/axiom.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "link": "npm link"
+  },
+  "dependencies": {
+    "ink": "^5.2.0",
+    "picocolors": "^1.1.1",
+    "react": "^18.3.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.12",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
