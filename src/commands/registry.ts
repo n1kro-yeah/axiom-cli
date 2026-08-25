@@ -16,6 +16,7 @@ export interface UiBridge {
   openThemePicker(): void;
   openLangPicker(): void;
   openHelp(): void;
+  openProviderAdd(): void;
   notice(level: "info" | "warn" | "error", text: string): void;
   requestExit(): void;
   setMode(mode: PermissionMode): void;

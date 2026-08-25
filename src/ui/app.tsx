@@ -17,6 +17,8 @@ import { StatusBar, HintLine, ModeBanner } from "./components/status-bar.js";
 import { PermissionDialog, NoticeLine } from "./components/dialogs.js";
 import { OverlayPicker, HelpOverlay } from "./components/overlay-picker.js";
 import type { PickerOption } from "./components/overlay-picker.js";
+import { ProviderWizard } from "./components/provider-wizard.js";
+import type { ProviderDraft } from "./components/provider-wizard.js";
 import type { CommandRegistry, CommandContext } from "../commands/registry.js";
 import type { ConfigStore } from "../config/loader.js";
 import type { AuthStore } from "../auth/store.js";
@@ -53,7 +55,8 @@ type OverlayState =
   | { kind: "sessions" }
   | { kind: "theme" }
   | { kind: "lang" }
-  | { kind: "help" };
+  | { kind: "help" }
+  | { kind: "provider-add" };
 
 const MODE_CYCLE: PermissionMode[] = ["normal", "accept", "plan", "bypass"];
 
@@ -162,6 +165,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
   const openThemePicker = useCallback(() => setOverlay({ kind: "theme" }), []);
   const openLangPicker = useCallback(() => setOverlay({ kind: "lang" }), []);
   const openHelp = useCallback(() => setOverlay({ kind: "help" }), []);
+  const openProviderAdd = useCallback(() => setOverlay({ kind: "provider-add" }), []);
   const requestExit = useCallback(() => {
     runtime.onExit();
     exit();
@@ -174,6 +178,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
       openThemePicker,
       openLangPicker,
       openHelp,
+      openProviderAdd,
       notice: pushCommandNotice,
       requestExit,
       setMode: (next: PermissionMode) => {
@@ -188,6 +193,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
       openHelp,
       openLangPicker,
       openModelPicker,
+      openProviderAdd,
       openSessions,
       openThemePicker,
       permissionEngine,
@@ -214,6 +220,33 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
       ui: uiBridge
     }),
     [agent, config, paths, registry, runtime, sessions, translator, uiBridge]
+  );
+
+  const handleProviderDraft = useCallback(
+    async (draft: ProviderDraft): Promise<string | null> => {
+      try {
+        config.mutateGlobal((globalDraft) => {
+          globalDraft.providers[draft.id] = {
+            type: draft.type,
+            baseUrl: draft.baseUrl,
+            ...(draft.apiKey ? { apiKey: draft.apiKey } : {}),
+            ...(draft.keyEnv ? { keyEnv: draft.keyEnv } : {}),
+            ...(draft.defaultModel ? { defaultModel: draft.defaultModel } : {})
+          };
+        });
+
+        if (draft.apiKey && draft.apiKey.trim().length > 0) {
+          await runtime.auth.setProvider(draft.id, { apiKey: draft.apiKey.trim() });
+        }
+
+        runtime.registry.invalidateAdapter(draft.id);
+        pushCommandNotice("info", `provider "${draft.id}" saved (${draft.type})`);
+        return null;
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    },
+    [config, pushCommandNotice, runtime]
   );
 
   const handleSubmit = useCallback(
@@ -385,6 +418,14 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
               }
               setOverlay({ kind: "none" });
             }}
+          />
+        ) : null}
+
+        {overlay.kind === "provider-add" ? (
+          <ProviderWizard
+            knownProviderIds={registry.configuredProviderIds()}
+            onSubmit={handleProviderDraft}
+            onCancel={() => setOverlay({ kind: "none" })}
           />
         ) : null}
 

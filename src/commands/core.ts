@@ -37,30 +37,43 @@ export const coreCommands: SlashCommand[] = [
   },
   {
     name: "provider",
-    description: "Show providers and credential status",
-    execute: async (_args, ctx): Promise<CommandResult> => {
+    description: "Show providers / add new",
+    argumentHint: "[add]",
+    execute: async (args, ctx): Promise<CommandResult> => {
+      if (args[0] === "add" || args[0] === "new") {
+        ctx.ui.openProviderAdd();
+        return { kind: "handled" };
+      }
+
       const lines: string[] = [];
       for (const providerId of ctx.registry.configuredProviderIds()) {
         const configured = ctx.registry.isConfigured(providerId);
         lines.push(`${configured ? "✓" : "·"} ${providerId.padEnd(12)} ${ctx.registry.providerLabel(providerId)}`);
       }
+      lines.push("");
+      lines.push("/provider add — add a custom endpoint interactively");
       return notice(lines.join("\n"));
     }
   },
   {
     name: "login",
-    description: "Add provider credentials",
-    argumentHint: "<provider> [--key-env NAME]",
+    description: "Add provider interactively or from env",
+    argumentHint: "[provider] [--key-env NAME]",
     execute: async (args, ctx): Promise<CommandResult> => {
       const [provider, ...rest] = args;
-      if (!provider) return error("usage: /login <provider>  (key is read from env or prompted)");
+
+      if (!provider) {
+        ctx.ui.openProviderAdd();
+        return { kind: "handled" };
+      }
+
       const keyEnvIndex = rest.indexOf("--key-env");
       const keyEnv = keyEnvIndex !== -1 ? rest[keyEnvIndex + 1] : undefined;
 
       const resolution = ctx.auth.resolveApiKey(provider, keyEnv ?? undefined);
       if (resolution.source === "none") {
         return error(
-          `No API key found for "${provider}". Set ${`AXIOM_${provider.toUpperCase()}_API_KEY`} or ${keyEnv ?? "the provider's env var"}, then retry.`
+          `No API key found for "${provider}". Run /login without arguments to add it interactively, or set ${`AXIOM_${provider.toUpperCase()}_API_KEY`}.`
         );
       }
 

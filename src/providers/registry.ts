@@ -145,7 +145,6 @@ export class ProviderRegistry {
   createAdapter(providerId: string): ProviderAdapter {
     const cached = this.adapters.get(providerId);
     if (cached) return cached;
-
     const global = this.configStore.loadGlobalSync();
     const customEntry = global.providers[providerId];
     const builtin = BUILTIN_PROVIDERS.find((provider) => provider.id === providerId);
@@ -185,6 +184,15 @@ export class ProviderRegistry {
     this.adapters.set(providerId, adapter);
     log.debug(`adapter created for ${providerId} (${providerType})`);
     return adapter;
+  }
+
+  invalidateAdapter(providerId: string): void {
+    this.adapters.delete(providerId);
+    log.debug(`adapter cache cleared for ${providerId}`);
+  }
+
+  invalidateAll(): void {
+    this.adapters.clear();
   }
 
   resolveModelInfo(reference: string): { adapter: ProviderAdapter; model: ModelInfo; ref: ResolvedModelRef } {
