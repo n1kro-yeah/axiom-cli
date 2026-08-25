@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Text, useApp, useInput } from "ink";
+import { Box, Text, useApp, useInput, useStdout } from "ink";
 import type {
   AttachmentRef,
   ChatMessage,
@@ -355,6 +355,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
   }, [agent.modelReference, registry]);
 
   const permissionRequestFromBus = bus.pendingPermission;
+  const terminalRows = useTerminalRows();
 
   const handlePermissionDecision = useCallback(
     (decision: PermissionDecision) => {
@@ -374,8 +375,6 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
   return (
     <ThemeContext.Provider value={themeValue}>
       <Box flexDirection="column" width="100%">
-        <WelcomeHeader visible={bus.completed.length === 0} subtitle={translator.dict.tui.welcomeSubtitle} />
-
         <CompletedMessages
           messages={bus.completed}
           expandedToolIds={expandedToolIds}
@@ -383,18 +382,23 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
           runningToolIds={bus.runningToolIds}
         />
 
-        {bus.streaming ? (
-          <StreamingMessage
-            message={bus.streaming}
-            runningToolIds={bus.runningToolIds}
-            progressByCall={bus.progressByCall}
-            pendingPermissionTool={undefined}
-          />
-        ) : null}
+        <Box flexDirection="column" height={terminalRows}>
+          <Box flexGrow={1} flexDirection="column">
+            <WelcomeHeader visible={bus.completed.length === 0} subtitle={translator.dict.tui.welcomeSubtitle} />
+            <Box flexGrow={1} flexShrink={1} />
 
-        {permissionRequestFromBus ? (
-          <PermissionDialog request={permissionRequestFromBus} onDecision={handlePermissionDecision} />
-        ) : null}
+            {bus.streaming ? (
+              <StreamingMessage
+                message={bus.streaming}
+                runningToolIds={bus.runningToolIds}
+                progressByCall={bus.progressByCall}
+                pendingPermissionTool={undefined}
+              />
+            ) : null}
+
+            {permissionRequestFromBus ? (
+              <PermissionDialog request={permissionRequestFromBus} onDecision={handlePermissionDecision} />
+            ) : null}
 
         {overlay.kind === "model" ? (
           <ModelPickerOverlay
@@ -509,8 +513,9 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
 
         <ModeBanner mode={mode} />
         <ActivityLine status={bus.status} />
+          </Box>
 
-        <InputPanel
+          <InputPanel
           busy={bus.status !== "idle"}
           waitingPermission={bus.status === "waiting_permission"}
           history={bus.inputHistory}
@@ -549,21 +554,35 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
           cwd={paths.projectRoot}
           errorText={bus.status === "error" ? (commandNotices[commandNotices.length - 1]?.text ?? "error") : null}
         />
-
-        {permissionRequestFromBus === null ? null : <PermissionGateFallback />}
+        </Box>
       </Box>
     </ThemeContext.Provider>
   );
 }
 
-function PermissionGateFallback(): React.ReactElement | null {
-  return null;
+function useTerminalRows(): number {
+  const { stdout } = useStdout();
+  const [rows, setRows] = useState(stdout?.rows ?? 24);
+
+  useEffect(() => {
+    if (!stdout) return;
+    setRows(stdout.rows ?? 24);
+    const stream = stdout as unknown as { on?: (event: string, handler: () => void) => void; off?: (event: string, handler: () => void) => void };
+    const onResize = () => setRows(stdout.rows ?? 24);
+    stream.on?.("resize", onResize);
+    return () => {
+      stream.off?.("resize", onResize);
+    };
+  }, [stdout]);
+
+  return rows;
 }
 
 const AXIOM_BANNER = [
-  " \u2554\u2550\u2557\u256d\u2500\u256e\u250c\u2500\u2510\u2554\u2550\u2563\u2554\u2500\u2568",
-  " \u255a\u2550\u2557\u255a\u2550\u255d \u2502 \u2551\u2554\u255d\u2550\u2563\u2554\u2550\u256e",
-  " \u255a\u2550\u2569\u2550\u2550\u2569 \u2569 \u255a\u2550\u255d\u2550\u2550\u2569\u255a\u2550\u255d"
+  "    _     __  __ ___   ___   __  __ ",
+  "   / \\    \\ \\/ / |_ | / __| |  \\/  |",
+  "  / _ \\    >  <   | || (__  | |\\/| |",
+  " /_/ \\_\\  /_/\\_\\ |___| \\___| |_|  |_|"
 ].join("\n");
 
 function WelcomeHeader({ visible, subtitle }: { visible: boolean; subtitle: string }): React.ReactElement | null {
