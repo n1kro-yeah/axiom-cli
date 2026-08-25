@@ -94,17 +94,11 @@ export function MessageBlock(props: {
   );
 }
 
-function MessageHeader({ message }: { message: ChatMessage }): React.ReactElement {
+function MessageHeader({ message }: { message: ChatMessage }): React.ReactElement | null {
   const { theme } = useTheme();
 
   if (message.role === "user") {
-    return (
-      <Box paddingLeft={0}>
-        <Text color={theme.accentBright} bold>
-          {USER_MARKER}{" "}
-        </Text>
-      </Box>
-    );
+    return null;
   }
 
   const meta: string[] = [];
@@ -115,7 +109,7 @@ function MessageHeader({ message }: { message: ChatMessage }): React.ReactElemen
   return (
     <Box gap={1} paddingLeft={0}>
       <Text color={theme.accent} bold>
-        {ASSISTANT_MARKER}
+        ◆
       </Text>
       {meta.length > 0 ? <Text dimColor>{meta.join(" · ")}</Text> : null}
       {message.summary ? <Text color={theme.info}>[summary]</Text> : null}
@@ -140,6 +134,7 @@ function MessageBody(props: {
   runningToolIds: Set<string>;
   progressByCall: Map<string, string[]>;
 }): React.ReactElement {
+  const { theme } = useTheme();
   const blocks: React.ReactElement[] = [];
   let textBuffer = "";
   let keyCounter = 0;
@@ -166,11 +161,9 @@ function MessageBody(props: {
         if (props.message.role === "user") {
           flushText();
           blocks.push(
-            <Box key={`user_${index}`} paddingLeft={1}>
-              <Text bold wrap="wrap">
-                {part.text}
-              </Text>
-            </Box>
+            <Text key={`user_${index}`} backgroundColor={theme.surface} color={theme.textPrimary} wrap="wrap">
+              {"  " + part.text + "  "}
+            </Text>
           );
         } else {
           textBuffer += (textBuffer.length > 0 ? "\n" : "") + part.text;

@@ -96,8 +96,6 @@ export function StatusBar(props: StatusBarProps): React.ReactElement {
   const gaugeColor =
     gauge.level === "critical" ? theme.gaugeCritical : gauge.level === "warn" ? theme.gaugeWarn : theme.gaugeOk;
 
-  const modeKey = modeColorKey(props.mode);
-
   if (props.errorText) {
     return (
       <Box flexDirection="column" paddingLeft={1} paddingTop={0}>
@@ -109,24 +107,15 @@ export function StatusBar(props: StatusBarProps): React.ReactElement {
   return (
     <Box flexDirection="column" paddingLeft={1} paddingRight={1}>
       <Box width="100%" justifyContent="space-between">
+        <Text dimColor>{props.cwd ? shortenHome(props.cwd) : "axiom"}</Text>
         <Text>
-          <Text color={resolveColor(theme, modeKey)}>⏵⏵ {MODE_LABELS[props.mode]}</Text>
-          <Text dimColor> (shift+tab to cycle)</Text>
-          {props.queueDepth > 0 ? <Text color={theme.warning}> · +{props.queueDepth} queued</Text> : null}
-        </Text>
-
-        <Text>
-          <Text color={gaugeColor}>● {Math.round(gauge.percent)}%</Text>
-          <Text dimColor> · </Text>
-          <Text color={theme.textSecondary}>{formatTokenCount(props.usedTokens)} ctx</Text>
+          <Text color={gaugeColor}>{formatTokenCount(props.usedTokens)}</Text>
+          <Text dimColor> ({Math.round(gauge.percent)}%)</Text>
           {props.costUSD > 0 ? (
-            <>
-              <Text dimColor> · </Text>
-              <Text color={theme.textSecondary}>${formatCost(props.costUSD)}</Text>
-            </>
+            <Text dimColor> · ${formatCost(props.costUSD)}</Text>
           ) : null}
-          <Text dimColor> · </Text>
-          <Text dimColor>/help</Text>
+          <Text dimColor>  </Text>
+          <Text color={theme.textSecondary}>/ commands</Text>
         </Text>
       </Box>
     </Box>

@@ -9,7 +9,7 @@ import type {
 } from "../types.js";
 import type { Agent } from "../agent/loop.js";
 import { useAgentBus } from "./hooks/use-agent-bus.js";
-import { ThemeContext, getTheme, ACCENT_NAMES, AXIOM_BANNER } from "./theme.js";
+import { ThemeContext, getTheme, ACCENT_NAMES, AXIOM_LOGO } from "./theme.js";
 import type { AccentName } from "./theme.js";
 import { CompletedMessages, StreamingMessage } from "./components/message-list.js";
 import { InputPanel } from "./components/input-panel.js";
@@ -533,6 +533,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
             });
           }}
           onClearAttachments={bus.clearAttachments}
+          modeHint={mode === "normal" ? undefined : mode}
           onSubmit={(text) => void handleSubmit(text)}
           onAbort={() => agent.abort("esc")}
           onPasteImage={() => pushCommandNotice("warn", "clipboard paste requires platform support (see docs)")}
@@ -583,34 +584,18 @@ function WelcomeHeader({ visible, subtitle }: { visible: boolean; subtitle: stri
   if (!visible) return null;
 
   return (
-    <Box flexDirection="column" paddingLeft={1} paddingRight={1} paddingBottom={1}>
-      <Box
-        borderStyle="round"
-        borderColor={theme.border}
-        paddingX={2}
-        paddingY={0}
-        flexDirection="row"
-        width="100%"
-      >
-        <Box flexDirection="column" width={34}>
-          <Text color={theme.accent}>{AXIOM_BANNER}</Text>
-          <Text> </Text>
-          <Text dimColor>v0.1.0 В· {subtitle}</Text>
-        </Box>
-
-        <Box flexDirection="column" flexGrow={1} paddingLeft={2} paddingTop={0}>
-          <Text bold color={theme.textPrimary}>Tips for getting started</Text>
-          <Text color={theme.textSecondary}>
-            Run <Text color={theme.accentBright}>/init</Text> to analyze this project and create an AGENTS.md
-          </Text>
-          <Text color={theme.textSecondary}>
-            Type <Text color={theme.accentBright}>/</Text> for commands, <Text color={theme.accentBright}>@</Text> to reference files
-          </Text>
-          <Text color={theme.textSecondary}>
-            <Text color={theme.accentBright}>Shift+Tab</Text> cycles permission modes В· <Text color={theme.accentBright}>/model</Text> switches models
-          </Text>
-        </Box>
-      </Box>
+    <Box flexDirection="column" paddingLeft={1} paddingBottom={1}>
+      <Text>
+        <Text color={theme.textSecondary}>{AXIOM_LOGO}</Text>
+        <Text dimColor> v0.1.0</Text>
+      </Text>
+      <Text dimColor>{subtitle}</Text>
+      <Text dimColor>
+        <Text color={theme.textSecondary}>/</Text> commands ·{" "}
+        <Text color={theme.textSecondary}>@</Text> files ·{" "}
+        <Text color={theme.textSecondary}>shift+tab</Text> modes ·{" "}
+        <Text color={theme.textSecondary}>/init</Text> to create AGENTS.md
+      </Text>
     </Box>
   );
 }

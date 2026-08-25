@@ -42,6 +42,9 @@ export interface Theme {
   borderActive: string;
   overlayBorder: string;
 
+  surface: string;
+  surfaceBorder: string;
+
   toolPending: string;
   toolRunning: string;
   toolDone: string;
@@ -75,9 +78,12 @@ function buildTheme(accent: AccentName): Theme {
     textDim: "#64748b",
     textFaint: "#475569",
 
-    border: "#334155",
+    border: "#262626",
     borderActive: palette.primary,
     overlayBorder: palette.dim,
+
+    surface: "#1a1a1a",
+    surfaceBorder: "#2e2e2e",
 
     toolPending: "#eab308",
     toolRunning: palette.bright,
@@ -118,12 +124,7 @@ export function useTheme(): ThemeContextValue {
   return useContext(ThemeContext);
 }
 
-export const AXIOM_BANNER = [
-  "    _    __  __  ___   ___  __  __ ",
-  "   / \\   \\ \\/ / |_ |  / __||  \\/  |",
-  "  / _ \\   >  <   | | | (__ | |\\/| |",
-  " /_/ \\_\\ /_/\\_\\ |___| \\___||_|  |_|"
-].join("\n");
+export const AXIOM_LOGO = "axiom_";
 
 export interface SpinnerFrames {
   frames: string[];

@@ -21,6 +21,7 @@ export interface InputPanelProps {
   slashCommands: SlashCommandHint[];
   getFileSuggestions: () => string[];
   attachments: AttachmentChip[];
+  modeHint?: string;
   onAddPathAttachment: (path: string) => void;
   onClearAttachments: () => void;
   onSubmit: (text: string) => void;
@@ -304,23 +305,25 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
 
       <Box
         width="100%"
-        flexDirection="row"
         borderStyle="single"
-        borderLeft={false}
-        borderRight={false}
-        borderTop
-        borderBottom={false}
-        borderColor={props.waitingPermission ? theme.warning : theme.border}
+        borderColor={theme.surfaceBorder}
+        borderLeftColor={props.waitingPermission ? theme.warning : theme.accent}
+        paddingX={1}
       >
-        <Box paddingLeft={0} paddingTop={0} paddingBottom={0}>
-          <Text color={props.waitingPermission ? theme.warning : theme.textSecondary} bold>
-            {"> "}
-          </Text>
+        <Box width="100%" flexDirection="row">
+          <Box flexGrow={1} flexDirection="row" flexWrap="wrap">
+            <Text color={theme.textSecondary}>{"> "}</Text>
+            {value.length === 0 && !showBusyLine ? (
+              <Text color={theme.textFaint}>{props.placeholder ?? "ask anything"}</Text>
+            ) : (
+              <Text wrap="wrap">{renderedInput}</Text>
+            )}
+          </Box>
           {value.length === 0 && !showBusyLine ? (
-            <Text dimColor>{props.placeholder ?? "ask anything"}</Text>
-          ) : (
-            <Text wrap="wrap">{renderedInput}</Text>
-          )}
+            <Box justifyContent="flex-end" flexGrow={1}>
+              <Text color={theme.textFaint}>{props.modeHint ? `[${props.modeHint}]` : ""}</Text>
+            </Box>
+          ) : null}
         </Box>
       </Box>
 
