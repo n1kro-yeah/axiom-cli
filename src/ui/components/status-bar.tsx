@@ -100,8 +100,8 @@ export function StatusBar(props: StatusBarProps): React.ReactElement {
 
   if (props.errorText) {
     return (
-      <Box flexDirection="column" paddingLeft={1}>
-        <Text color={theme.danger}>✗ {truncate(props.errorText, 96)}</Text>
+      <Box flexDirection="column" paddingLeft={1} paddingTop={0}>
+        <Text color={theme.danger}>✗ {truncate(props.errorText, 110)}</Text>
       </Box>
     );
   }
@@ -109,24 +109,25 @@ export function StatusBar(props: StatusBarProps): React.ReactElement {
   return (
     <Box flexDirection="column" paddingLeft={1} paddingRight={1}>
       <Box width="100%" justifyContent="space-between">
-        <Box gap={1}>
+        <Text>
           <Text color={resolveColor(theme, modeKey)}>⏵⏵ {MODE_LABELS[props.mode]}</Text>
-          <Text dimColor>·</Text>
-          <Text color={theme.textSecondary}>{props.model.id}</Text>
-          {props.queueDepth > 0 ? <Text color={theme.warning}>· +{props.queueDepth} queued</Text> : null}
-        </Box>
+          <Text dimColor> (shift+tab to cycle)</Text>
+          {props.queueDepth > 0 ? <Text color={theme.warning}> · +{props.queueDepth} queued</Text> : null}
+        </Text>
 
-        <Box gap={1}>
-          <Text color={gaugeColor}>{formatTokenCount(props.usedTokens)}</Text>
-          <Text dimColor>({Math.round(gauge.percent)}%)</Text>
-          <Text dimColor>·</Text>
-          <Text color={props.costUSD > 0 ? theme.textSecondary : theme.textFaint}>${formatCost(props.costUSD)}</Text>
-        </Box>
-      </Box>
-
-      <Box width="100%" justifyContent="space-between">
-        <Text dimColor>{props.cwd ? shortenHome(props.cwd) : " "}</Text>
-        <Text dimColor>/ commands</Text>
+        <Text>
+          <Text color={gaugeColor}>● {Math.round(gauge.percent)}%</Text>
+          <Text dimColor> · </Text>
+          <Text color={theme.textSecondary}>{formatTokenCount(props.usedTokens)} ctx</Text>
+          {props.costUSD > 0 ? (
+            <>
+              <Text dimColor> · </Text>
+              <Text color={theme.textSecondary}>${formatCost(props.costUSD)}</Text>
+            </>
+          ) : null}
+          <Text dimColor> · </Text>
+          <Text dimColor>/help</Text>
+        </Text>
       </Box>
     </Box>
   );

@@ -118,6 +118,13 @@ export function useTheme(): ThemeContextValue {
   return useContext(ThemeContext);
 }
 
+export const AXIOM_BANNER = [
+  "    _    __  __  ___   ___  __  __ ",
+  "   / \\   \\ \\/ / |_ |  / __||  \\/  |",
+  "  / _ \\   >  <   | | | (__ | |\\/| |",
+  " /_/ \\_\\ /_/\\_\\ |___| \\___||_|  |_|"
+].join("\n");
+
 export interface SpinnerFrames {
   frames: string[];
   intervalMs: number;

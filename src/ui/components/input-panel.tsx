@@ -302,9 +302,18 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
         </Box>
       ) : null}
 
-      <Box paddingLeft={1} paddingRight={1}>
-        <Box width="100%" flexDirection="row" flexWrap="wrap">
-          <Text color={props.waitingPermission ? theme.warning : theme.accentBright} bold>
+      <Box
+        width="100%"
+        flexDirection="row"
+        borderStyle="single"
+        borderLeft={false}
+        borderRight={false}
+        borderTop
+        borderBottom={false}
+        borderColor={props.waitingPermission ? theme.warning : theme.border}
+      >
+        <Box paddingLeft={0} paddingTop={0} paddingBottom={0}>
+          <Text color={props.waitingPermission ? theme.warning : theme.textSecondary} bold>
             {"> "}
           </Text>
           {value.length === 0 && !showBusyLine ? (

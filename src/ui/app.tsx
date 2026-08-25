@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useApp, useInput, useStdout } from "ink";
 import type {
   AttachmentRef,
@@ -9,7 +9,7 @@ import type {
 } from "../types.js";
 import type { Agent } from "../agent/loop.js";
 import { useAgentBus } from "./hooks/use-agent-bus.js";
-import { ThemeContext, getTheme, ACCENT_NAMES } from "./theme.js";
+import { ThemeContext, getTheme, ACCENT_NAMES, AXIOM_BANNER } from "./theme.js";
 import type { AccentName } from "./theme.js";
 import { CompletedMessages, StreamingMessage } from "./components/message-list.js";
 import { InputPanel } from "./components/input-panel.js";
@@ -286,7 +286,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
       lastCtrlCRef.current = now;
       if (agent.isRunning) {
         agent.abort("ctrl-c");
-        pushCommandNotice("info", "stopping generation… press Ctrl+C again to quit");
+        pushCommandNotice("info", "stopping generationвЂ¦ press Ctrl+C again to quit");
       } else {
         pushCommandNotice("info", "press Ctrl+C again to quit");
       }
@@ -410,7 +410,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
               config.mutateGlobal((draft) => {
                 draft.model = value;
               });
-              pushCommandNotice("info", `model → ${value}`);
+              pushCommandNotice("info", `model в†’ ${value}`);
               setOverlay({ kind: "none" });
             }}
           />
@@ -462,14 +462,14 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
             filterable={false}
             options={[
               { label: "English", value: "en" },
-              { label: "Русский", value: "ru" }
+              { label: "Р СѓСЃСЃРєРёР№", value: "ru" }
             ]}
             onClose={() => setOverlay({ kind: "none" })}
             onSelect={(value) => {
               config.mutateGlobal((draft) => {
                 draft.language = value as "en" | "ru";
               });
-              pushCommandNotice("info", `language → ${value} (restart to fully apply)`);
+              pushCommandNotice("info", `language в†’ ${value} (restart to fully apply)`);
               setOverlay({ kind: "none" });
             }}
           />
@@ -483,16 +483,16 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
                 heading: "Keys",
                 entries: [
                   { keys: "enter", description: "send message / accept completion" },
-                  { keys: "↑ / ↓", description: "input history · navigate menus" },
+                  { keys: "в†‘ / в†“", description: "input history В· navigate menus" },
                   { keys: "/", description: "slash commands" },
                   { keys: "@", description: "fuzzy file reference" },
                   { keys: "tab", description: "complete popup selection" },
                   { keys: "shift+tab", description: "cycle permission mode" },
-                  { keys: "esc", description: "stop generation · close overlays" },
+                  { keys: "esc", description: "stop generation В· close overlays" },
                   { keys: "ctrl+t", description: "toggle last thinking block" },
                   { keys: "e", description: "expand/collapse last tool output" },
                   { keys: "ctrl+v", description: "attach clipboard image" },
-                  { keys: "ctrl+c ×2", description: "quit" }
+                  { keys: "ctrl+c Г—2", description: "quit" }
                 ]
               },
               {
@@ -578,31 +578,38 @@ function useTerminalRows(): number {
   return rows;
 }
 
-const AXIOM_BANNER = [
-  "    _     __  __ ___   ___   __  __ ",
-  "   / \\    \\ \\/ / |_ | / __| |  \\/  |",
-  "  / _ \\    >  <   | || (__  | |\\/| |",
-  " /_/ \\_\\  /_/\\_\\ |___| \\___| |_|  |_|"
-].join("\n");
-
 function WelcomeHeader({ visible, subtitle }: { visible: boolean; subtitle: string }): React.ReactElement | null {
   const { theme } = useThemeSafe();
   if (!visible) return null;
 
   return (
-    <Box flexDirection="column" paddingLeft={2} paddingTop={0} paddingBottom={1}>
-      <Text color={theme.accent}>{AXIOM_BANNER}</Text>
-      <Box marginTop={0}>
-        <Text dimColor>
-          v0.1.0 · {subtitle}
-        </Text>
-      </Box>
-      <Box>
-        <Text dimColor>
-          {" "}
-          type your request · <Text color={theme.textSecondary}>/</Text> commands ·{" "}
-          <Text color={theme.textSecondary}>@</Text> files · <Text color={theme.textSecondary}>shift+tab</Text> modes
-        </Text>
+    <Box flexDirection="column" paddingLeft={1} paddingRight={1} paddingBottom={1}>
+      <Box
+        borderStyle="round"
+        borderColor={theme.border}
+        paddingX={2}
+        paddingY={0}
+        flexDirection="row"
+        width="100%"
+      >
+        <Box flexDirection="column" width={34}>
+          <Text color={theme.accent}>{AXIOM_BANNER}</Text>
+          <Text> </Text>
+          <Text dimColor>v0.1.0 В· {subtitle}</Text>
+        </Box>
+
+        <Box flexDirection="column" flexGrow={1} paddingLeft={2} paddingTop={0}>
+          <Text bold color={theme.textPrimary}>Tips for getting started</Text>
+          <Text color={theme.textSecondary}>
+            Run <Text color={theme.accentBright}>/init</Text> to analyze this project and create an AGENTS.md
+          </Text>
+          <Text color={theme.textSecondary}>
+            Type <Text color={theme.accentBright}>/</Text> for commands, <Text color={theme.accentBright}>@</Text> to reference files
+          </Text>
+          <Text color={theme.textSecondary}>
+            <Text color={theme.accentBright}>Shift+Tab</Text> cycles permission modes В· <Text color={theme.accentBright}>/model</Text> switches models
+          </Text>
+        </Box>
       </Box>
     </Box>
   );
@@ -641,7 +648,7 @@ function ModelPickerOverlay(props: ModelPickerOverlayProps): React.ReactElement 
       const value = `${group.providerId}/${model.id}`;
       options.push({
         label: value,
-        hint: `${model.label} · ${Math.round(model.contextWindow / 1000)}k${model.recommended ? "  ★" : ""}`,
+        hint: `${model.label} В· ${Math.round(model.contextWindow / 1000)}k${model.recommended ? "  в…" : ""}`,
         value
       });
     }
@@ -675,7 +682,7 @@ function SessionsPickerOverlay(props: SessionsPickerOverlayProps): React.ReactEl
       setOptions(
         all.slice(0, 40).map((meta) => ({
           label: meta.title.slice(0, 50),
-          hint: `${new Date(meta.updatedAt).toISOString().slice(5, 16)} · ${meta.messageCount} msg · $${meta.totalCostUSD.toFixed(3)}`,
+          hint: `${new Date(meta.updatedAt).toISOString().slice(5, 16)} В· ${meta.messageCount} msg В· $${meta.totalCostUSD.toFixed(3)}`,
           value: meta.id
         }))
       );
