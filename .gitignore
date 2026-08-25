@@ -10,3 +10,5 @@ Thumbs.db
 *.tsbuildinfo
 coverage/
 .vitest-cache/
+
+axiom-cli/
