@@ -1,176 +1,233 @@
-import React, { useEffect, useState } from "react";
-import { Box, Text } from "ink";
-import type { AgentRuntimeStatus, ModelInfo, PermissionMode, TodoItem } from "../../types.js";
-import { useTheme, SPINNER_VARIANTS, statusColor } from "../theme.js";
-import { contextGauge, formatCost, formatTokenCount } from "../../agent/tokens.js";
+﻿import { Box, Text } from "ink";
+import { Fragment } from "react";
+import type { ReactNode } from "react";
+import type { PermissionMode } from "../../types.js";
+import { useTheme } from "../theme.js";
 
-export function Spinner({ kind = "dots", color }: { kind?: keyof typeof SPINNER_VARIANTS | string; color?: string }): React.ReactElement {
-  const variant = SPINNER_VARIANTS[kind] ?? SPINNER_VARIANTS.dots;
-  const [frame, setFrame] = useState(0);
-  const theme = useTheme().theme;
+const BAR_WIDTH = 12;
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setFrame((current) => (current + 1) % variant.frames.length);
-    }, variant.intervalMs);
-    return () => clearInterval(timer);
-  }, [variant]);
-
-  return <Text color={color ?? theme.accentBright}>{variant.frames[frame] ?? "·"}</Text>;
+export interface StatusBarData {
+  modelRef: string;
+  effort: "low" | "medium" | "high";
+  thinking: boolean;
+  mode: PermissionMode;
+  usage: { input: number; output: number; cacheRead: number; costUsd: number };
+  context: { window: number; used: number; exact: boolean };
+  turnMs: number | null;
+  sessionMs: number;
+  bypass: boolean;
+  busy: boolean;
+  mcpConnected: number;
+  mcpFailed: number;
+  activeAgents: number;
+  queueDepth: number;
 }
 
-export function ActivityLine({ status }: { status: AgentRuntimeStatus }): React.ReactElement | null {
+export function formatDuration(ms: number): string {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const restSeconds = seconds % 60;
+  if (minutes < 60) return `${minutes}m ${restSeconds}s`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ${minutes % 60}m`;
+}
+
+function tokens(count: number): string {
+  if (count < 1000) return String(count);
+  if (count < 1_000_000) {
+    const value = count / 1000;
+    return `${value.toFixed(value < 10 ? 1 : 0).replace(/\.0$/, "")}k`;
+  }
+  return `${(count / 1_000_000).toFixed(2)}M`;
+}
+
+function shortModel(ref: string): string {
+  const slash = ref.lastIndexOf("/");
+  return slash === -1 ? ref : ref.slice(slash + 1);
+}
+
+export function StatusBar({ status }: { status: StatusBarData }): React.ReactElement {
   const { theme } = useTheme();
 
-  if (status === "idle" || status === "error" || status === "aborted") return null;
+  const details: ReactNode[] = [];
 
-  const labels: Partial<Record<AgentRuntimeStatus, string>> = {
-    streaming: "thinking",
-    executing_tools: "running tools",
-    waiting_permission: "waiting for approval",
-    compacting: "compacting context"
-  };
-  const label = labels[status];
-  if (!label) return null;
+  if (!status.thinking) {
+    details.push(
+      <Text key="think" color={theme.warning}>
+        thinking off
+      </Text>
+    );
+  }
+
+  if (status.mode !== "normal") {
+    const modeColor = status.mode === "accept" ? theme.warning : status.mode === "plan" ? theme.info : theme.danger;
+    details.push(
+      <Text key="mode" color={modeColor}>
+        {status.mode} mode
+      </Text>
+    );
+  }
+
+  details.push(
+    <Text key="usage">
+      <Text color={theme.textPrimary} bold>
+        {tokens(status.usage.input)}
+      </Text>
+      <Text dimColor> в†‘ </Text>
+      <Text color={theme.ok}>{tokens(status.usage.output)}</Text>
+      <Text dimColor> в†“</Text>
+      {status.usage.cacheRead > 0 ? (
+        <>
+          <Text dimColor> (</Text>
+          <Text color="gray">{tokens(status.usage.cacheRead)} cache</Text>
+          <Text dimColor>)</Text>
+        </>
+      ) : null}
+      {status.usage.costUsd > 0 ? (
+        <>
+          <Text dimColor> В· </Text>
+          <Text color={theme.warning} bold>
+            ${status.usage.costUsd < 0.01 ? status.usage.costUsd.toFixed(4) : status.usage.costUsd.toFixed(3)}
+          </Text>
+        </>
+      ) : null}
+    </Text>
+  );
+
+  details.push(
+    <Text
+      key="elapsed"
+      color={status.turnMs !== null ? theme.accentBright : undefined}
+      bold={status.turnMs !== null}
+    >
+      {status.turnMs !== null
+        ? `working ${formatDuration(status.turnMs)}`
+        : `session for ${formatDuration(status.sessionMs)}`}
+    </Text>
+  );
+
+  if (status.queueDepth > 0) {
+    details.push(
+      <Text key="queue" color={theme.warning}>
+        +{status.queueDepth} queued
+      </Text>
+    );
+  }
+
+  if (status.bypass) {
+    details.push(
+      <Text key="bypass" color="black" backgroundColor={theme.warning} bold>
+        {" "}BYPASS{" "}
+      </Text>
+    );
+  }
 
   return (
-    <Box paddingLeft={1} gap={1}>
-      <Spinner />
-      <Text color={theme.textSecondary} italic>
-        {label}… (esc to interrupt)
+    <Box
+      width="100%"
+      flexShrink={0}
+      marginTop={1}
+      paddingX={1}
+      borderStyle="single"
+      borderTop
+      borderBottom={false}
+      borderLeft={false}
+      borderRight={false}
+      borderColor={theme.accent}
+      borderDimColor
+      flexDirection="column"
+      alignItems="flex-start"
+    >
+      <Box width="100%">
+        <Box flexGrow={1} flexShrink={1} flexWrap="wrap" alignItems="flex-start">
+          <ModelBadge modelRef={status.modelRef} />
+          <Text dimColor>{" В· "}</Text>
+          <EffortBadge effort={status.effort} />
+        </Box>
+        <Box flexShrink={0} marginLeft={2} flexDirection="column" alignItems="flex-end">
+          <ContextMeter window={status.context.window} used={status.context.used} exact={status.context.exact} />
+          {status.mcpConnected > 0 || status.mcpFailed > 0 ? (
+            <Text>
+              {status.mcpConnected > 0 ? <Text color={theme.ok}>mcp:{status.mcpConnected}</Text> : null}
+              {status.mcpConnected > 0 && status.mcpFailed > 0 ? <Text dimColor> В· </Text> : null}
+              {status.mcpFailed > 0 ? <Text color={theme.error}>{status.mcpFailed} failed</Text> : null}
+            </Text>
+          ) : null}
+          {status.activeAgents > 0 ? (
+            <Text color={theme.accent}>{status.activeAgents} agent(s)</Text>
+          ) : null}
+        </Box>
+      </Box>
+      <Box flexWrap="wrap" marginTop={0}>
+        {details.map((item, index) => (
+          <Fragment key={index}>
+            {index > 0 ? <Text dimColor>{" В· "}</Text> : null}
+            {item}
+          </Fragment>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
+function ModelBadge({ modelRef }: { modelRef: string }): React.ReactElement {
+  const { theme } = useTheme();
+  return (
+    <Box borderColor={theme.accent} borderStyle="round" paddingX={1}>
+      <Text color={theme.accent} bold>
+        {shortModel(modelRef)}
       </Text>
     </Box>
   );
 }
 
-const MODE_LABELS: Record<PermissionMode, string> = {
-  normal: "build",
-  accept: "accept edits",
-  plan: "plan",
-  bypass: "bypass"
+const EFFORT_STYLES: Record<string, { label: string; color: string; bold?: boolean; dim?: boolean }> = {
+  high: { label: "high", color: "cyan" },
+  medium: { label: "medium", color: "blue" },
+  low: { label: "low", color: "gray", dim: true }
 };
 
-const MODE_COLORS: Record<PermissionMode, string> = {
-  normal: "accent",
-  accept: "success",
-  plan: "info",
-  bypass: "danger"
-};
-
-function modeColorKey(mode: PermissionMode): string {
-  return MODE_COLORS[mode];
-}
-
-function resolveColor(theme: { accent: string; success: string; info: string; danger: string }, key: string): string {
-  switch (key) {
-    case "success":
-      return theme.success;
-    case "info":
-      return theme.info;
-    case "danger":
-      return theme.danger;
-    default:
-      return theme.accent;
-  }
-}
-
-export interface StatusBarProps {
-  status: AgentRuntimeStatus;
-  mode: PermissionMode;
-  model: ModelInfo;
-  providerLabel: string;
-  usedTokens: number;
-  totalTokens: number;
-  costUSD: number;
-  queueDepth: number;
-  mcpCount: number;
-  todos: TodoItem[];
-  sessionTitle?: string;
-  cwd?: string;
-  errorText?: string | null;
-}
-
-export function StatusBar(props: StatusBarProps): React.ReactElement {
-  const { theme } = useTheme();
-  const gauge = contextGauge(props.usedTokens, props.model);
-  const gaugeColor =
-    gauge.level === "critical" ? theme.gaugeCritical : gauge.level === "warn" ? theme.gaugeWarn : theme.gaugeOk;
-
-  if (props.errorText) {
-    return (
-      <Box flexDirection="column" paddingLeft={1} paddingTop={0}>
-        <Text color={theme.danger}>✗ {truncate(props.errorText, 110)}</Text>
-      </Box>
-    );
-  }
-
+function EffortBadge({ effort }: { effort: string }): React.ReactElement {
+  const style = EFFORT_STYLES[effort] ?? EFFORT_STYLES.medium;
   return (
-    <Box flexDirection="column" paddingLeft={1} paddingRight={1}>
-      <Box width="100%" justifyContent="space-between">
-        <Text dimColor>{props.cwd ? shortenHome(props.cwd) : "axiom"}</Text>
-        <Text>
-          <Text color={gaugeColor}>{formatTokenCount(props.usedTokens)}</Text>
-          <Text dimColor> ({Math.round(gauge.percent)}%)</Text>
-          {props.costUSD > 0 ? (
-            <Text dimColor> · ${formatCost(props.costUSD)}</Text>
-          ) : null}
-          <Text dimColor>  </Text>
-          <Text color={theme.textSecondary}>/ commands</Text>
-        </Text>
-      </Box>
+    <Box borderColor={style.color} borderStyle="round" paddingX={1}>
+      <Text color={style.color} bold={style.bold} dimColor={style.dim}>
+        {style.label}
+      </Text>
     </Box>
   );
 }
 
-function truncate(value: string, limit: number): string {
-  const single = value.replace(/\s+/g, " ").trim();
-  return single.length <= limit ? single : `${single.slice(0, limit - 1)}…`;
-}
-
-function shortenHome(cwd: string): string {
-  const home = process.env["USERPROFILE"] ?? process.env["HOME"] ?? "";
-  if (home.length > 0 && cwd.toLowerCase().startsWith(home.toLowerCase())) {
-    return `~${cwd.slice(home.length)}`;
-  }
-  return cwd;
-}
-
-export interface HintLineProps {
-  text: string;
-}
-
-export function HintLine({ text }: HintLineProps): React.ReactElement | null {
-  if (!text) return null;
-  return null;
-}
-
-export function ModeBanner({ mode }: { mode: PermissionMode }): React.ReactElement | null {
+function ContextMeter({ window: win, used, exact }: { window: number; used: number; exact: boolean }): React.ReactElement {
   const { theme } = useTheme();
-  if (mode === "plan") {
+
+  if (!exact || win <= 0) {
     return (
-      <Box paddingLeft={1}>
-        <Text color={theme.info}>plan mode — the agent reads and plans, changing nothing</Text>
-      </Box>
+      <Text>
+        <Text dimColor>ctx </Text>
+        <Text color="gray">{tokens(used)}</Text>
+        {win > 0 ? <Text dimColor>/{tokens(win)}</Text> : null}
+      </Text>
     );
   }
-  if (mode === "bypass") {
-    return (
-      <Box paddingLeft={1}>
-        <Text color={theme.danger}>bypass mode — approvals disabled</Text>
-      </Box>
-    );
-  }
-  return null;
-}
 
-export function ContextInline({ used, model }: { used: number; model: ModelInfo }): React.ReactElement {
-  const { theme } = useTheme();
-  const gauge = contextGauge(used, model);
-  const color =
-    gauge.level === "critical" ? theme.gaugeCritical : gauge.level === "warn" ? theme.gaugeWarn : theme.gaugeOk;
+  const pct = Math.min(Math.max(used / win, 0), 1);
+  const filled = Math.max(0, Math.min(BAR_WIDTH, Math.round(BAR_WIDTH * pct)));
+  const color = pct < 0.6 ? theme.ok : pct < 0.85 ? theme.warning : theme.error;
+  const percent = Math.round(pct * 100);
+
   return (
-    <Text color={color}>
-      {formatTokenCount(used)} ({Math.round(gauge.percent)}%)
+    <Text>
+      <Text dimColor>ctx </Text>
+      <Text color={color} bold>
+        {`${percent}%`.padStart(4)}
+      </Text>
+      <Text color={color}> в–ђ{"в–€".repeat(filled)}</Text>
+      <Text color="gray">{"в–‘".repeat(BAR_WIDTH - filled)}</Text>
+      <Text color={color}>в–Њ</Text>
+      <Text dimColor> {tokens(used)}/{tokens(win)}</Text>
     </Text>
   );
 }
+

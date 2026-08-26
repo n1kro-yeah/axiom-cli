@@ -9,6 +9,7 @@ import {
   truncateToolOutput
 } from "./common.js";
 import { splitLines } from "../util/diff.js";
+import { renderUnifiedDiff } from "../util/diff.js";
 import { summarizeChanges } from "../util/patch.js";
 
 const MAX_WRITE_BYTES = 2 * 1024 * 1024;
@@ -110,6 +111,7 @@ export const writeTool: ToolDefinition = {
     const stats = summarizeChanges(previousContent, content);
     const preview =
       previousContent.length < 20000 ? renderPreview(previousContent, content) : "";
+    const diffText = renderUnifiedDiff(previousContent, content, { filePath: resolved.relative });
 
     return {
       content: truncateToolOutput(
@@ -119,7 +121,8 @@ export const writeTool: ToolDefinition = {
       metadata: {
         filesChanged: [{ path: resolved.relative, kind: "updated" }],
         additions: stats.additions,
-        deletions: stats.deletions
+        deletions: stats.deletions,
+        diff: diffText
       }
     };
   }

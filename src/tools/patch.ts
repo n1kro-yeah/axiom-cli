@@ -3,6 +3,7 @@ import type { ToolDefinition, ToolInvocationResult, ToolContext } from "../types
 import { AxiomError } from "../util/errors.js";
 import { resolveWithinRoot } from "./common.js";
 import { applyUnifiedPatch, parseUnifiedPatch } from "../util/patch.js";
+import { renderUnifiedDiff } from "../util/diff.js";
 import { guardBinaryFile } from "./common.js";
 
 export const patchTool: ToolDefinition = {
@@ -114,6 +115,7 @@ export const patchTool: ToolDefinition = {
     await writeFile(resolved.absolute, outcome.newText, "utf8");
 
     const changedLines = countChangedLines(original, outcome.newText);
+    const resultDiff = renderUnifiedDiff(original, outcome.newText, { filePath: resolved.relative });
     report.push(
       `Written. +${changedLines.additions}/-${changedLines.deletions}${outcome.rejectedHunks.length > 0 ? " (partial)" : ""}`
     );
@@ -125,7 +127,8 @@ export const patchTool: ToolDefinition = {
         filesChanged: [{ path: resolved.relative, kind: "patched" }],
         additions: changedLines.additions,
         deletions: changedLines.deletions,
-        rejectedHunks: outcome.rejectedHunks
+        rejectedHunks: outcome.rejectedHunks,
+        diff: resultDiff
       }
     };
   }

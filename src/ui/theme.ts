@@ -31,7 +31,9 @@ export interface Theme {
   success: string;
   warning: string;
   danger: string;
+  error: string;
   info: string;
+  ok: string;
 
   textPrimary: string;
   textSecondary: string;
@@ -71,7 +73,9 @@ function buildTheme(accent: AccentName): Theme {
     success: "#22c55e",
     warning: "#eab308",
     danger: "#ef4444",
+    error: "#ef4444",
     info: "#38bdf8",
+    ok: "#4ade80",
 
     textPrimary: "#e2e8f0",
     textSecondary: "#94a3b8",

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useInput } from "ink";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { rankByFuzzy } from "../../util/fuzzy.js";
 import { useTheme } from "../theme.js";
 
@@ -21,7 +21,8 @@ export interface InputPanelProps {
   slashCommands: SlashCommandHint[];
   getFileSuggestions: () => string[];
   attachments: AttachmentChip[];
-  modeHint?: string;
+  pendingCount: number;
+  hint?: string;
   onAddPathAttachment: (path: string) => void;
   onClearAttachments: () => void;
   onSubmit: (text: string) => void;
@@ -39,6 +40,15 @@ interface PopupState {
 }
 
 const MAX_HISTORY = 300;
+const SUGGESTION_WINDOW = 6;
+
+function characters(value: string): string[] {
+  return [...value];
+}
+
+function clampValue(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(value, max));
+}
 
 export function InputPanel(props: InputPanelProps): React.ReactElement {
   const { theme } = useTheme();
@@ -46,11 +56,14 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
   const [cursor, setCursor] = useState(0);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [popup, setPopup] = useState<PopupState | null>(null);
-  const draftBeforeHistory = useRef<string>("");
+  const historyDraft = useRef("");
+  const draftBeforeHistory = useRef("");
+
+  const valueChars = characters(value);
 
   useEffect(() => {
-    updatePopup(value, cursor);
-  }, [value, cursor]);
+    setCursor((current) => clampValue(current, 0, valueChars.length));
+  }, [value.length]);
 
   function updatePopup(currentValue: string, currentCursor: number): void {
     const beforeCursorText = currentValue.slice(0, currentCursor);
@@ -77,10 +90,7 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
       if (ranked.length > 0) {
         setPopup({
           kind: "file",
-          items: ranked.map((entry) => ({
-            label: entry.item,
-            insert: entry.item
-          })),
+          items: ranked.map((entry) => ({ label: entry.item, insert: entry.item })),
           selected: 0
         });
         return;
@@ -88,6 +98,13 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
     }
 
     setPopup(null);
+  }
+
+  function change(next: string, nextCursor?: number): void {
+    setValue(next);
+    setCursor(nextCursor ?? characters(next).length);
+    setHistoryIndex(null);
+    historyDraft.current = next;
   }
 
   function acceptPopupItem(state: PopupState): void {
@@ -98,8 +115,7 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
     }
 
     if (state.kind === "slash") {
-      setValue(`${item.insert} `);
-      setCursor(item.insert.length + 1);
+      change(`${item.insert} `);
       setPopup(null);
       return;
     }
@@ -113,12 +129,9 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
 
       if (/\.(png|jpe?g|gif|webp|bmp)$/i.test(item.insert)) {
         props.onAddPathAttachment(item.insert);
-        setValue(replacementBase);
-        setCursor(replacementBase.length);
+        change(replacementBase, replacementBase.length);
       } else {
-        const nextValue = `${replacementBase}@${quoted}${trailing}`;
-        setValue(nextValue);
-        setCursor(atMatch.index + 1 + quoted.length);
+        change(`${replacementBase}@${quoted}${trailing}`, atMatch.index + 1 + quoted.length);
       }
     }
     setPopup(null);
@@ -138,10 +151,7 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
       props.onSubmit(trimmed);
     }
 
-    setValue("");
-    setCursor(0);
-    setHistoryIndex(null);
-    draftBeforeHistory.current = "";
+    change("");
     setPopup(null);
   }
 
@@ -158,16 +168,14 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
       if (index >= props.history.length) return;
       if (index < 0) {
         setHistoryIndex(null);
-        setValue(draftBeforeHistory.current);
-        setCursor(draftBeforeHistory.current.length);
+        change(draftBeforeHistory.current, draftBeforeHistory.current.length);
         return;
       }
     }
 
     const entry = props.history[index] ?? "";
     setHistoryIndex(index);
-    setValue(entry);
-    setCursor(entry.length);
+    change(entry, entry.length);
   }
 
   useInput(
@@ -198,8 +206,7 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
           return;
         }
         if (value.length > 0) {
-          setValue("");
-          setCursor(0);
+          change("");
           return;
         }
         props.onAbort();
@@ -223,13 +230,16 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
       }
       if ((key.backspace || key.delete) && !key.meta) {
         if (cursor > 0) {
-          setValue((current) => current.slice(0, cursor - 1) + current.slice(cursor));
-          setCursor((current) => Math.max(current - 1, 0));
+          const chars = characters(value);
+          chars.splice(cursor - 1, 1);
+          change(chars.join(""), cursor - 1);
         }
         return;
       }
       if (key.backspace || key.delete) {
-        setValue((current) => current.slice(0, cursor) + current.slice(cursor + 1));
+        const chars = characters(value);
+        chars.splice(cursor, 1);
+        change(chars.join(""), cursor);
         return;
       }
 
@@ -238,21 +248,16 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
         return;
       }
       if (key.ctrl && input === "u") {
-        setValue("");
-        setCursor(0);
+        change("");
         return;
       }
       if (key.ctrl && input === "k") {
-        setValue((current) => current.slice(0, cursor));
+        change(value.slice(0, cursor), cursor);
         return;
       }
       if (key.ctrl && input === "w") {
-        setValue((current) => {
-          const left = current.slice(0, cursor).replace(/\S+\s*$/, "");
-          const next = left + current.slice(cursor);
-          setCursor(left.length);
-          return next;
-        });
+        const left = value.slice(0, cursor).replace(/\S+\s*$/, "");
+        change(left + value.slice(cursor), left.length);
         return;
       }
       if (key.ctrl && input === "a") {
@@ -267,104 +272,102 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
       if (input && !key.ctrl && !key.meta && input.length >= 1) {
         const printable = input.replace(/[\r\n]/g, "");
         if (printable.length === 0) return;
-        setValue((current) => current.slice(0, cursor) + printable + current.slice(cursor));
-        setCursor((current) => current + printable.length);
+        const chars = characters(value);
+        chars.splice(cursor, 0, ...characters(printable));
+        change(chars.join(""), cursor + characters(printable).length);
       }
     },
     { isActive: !props.overlayOpen }
   );
 
-  const renderedInput = useMemo(() => renderWithCursor(value, cursor), [value, cursor]);
+  useEffect(() => {
+    updatePopup(value, cursor);
+  }, [value, cursor]);
 
-  const showBusyLine = props.busy && !props.waitingPermission;
-  const borderless = true;
-  void borderless;
+  const suggestions = useMemo(() => {
+    if (!popup) return [] as PopupState["items"];
+    return popup.items;
+  }, [popup]);
+
+  const suggestionStart = Math.max(
+    0,
+    Math.min((popup?.selected ?? 0) - SUGGESTION_WINDOW + 2, suggestions.length - SUGGESTION_WINDOW)
+  );
+  const visibleSuggestions = suggestions.slice(suggestionStart, suggestionStart + SUGGESTION_WINDOW);
 
   return (
-    <Box flexDirection="column">
-      {popup ? (
-        <Box flexDirection="column" paddingLeft={1}>
-          {popup.items.map((item, index) => (
-            <Box key={`${item.label}_${index}`} width="100%" justifyContent="space-between">
-              <Text color={index === popup.selected ? theme.accentBright : theme.textSecondary} bold={index === popup.selected}>
-                {index === popup.selected ? "› " : "  "}
-                {item.label}
-              </Text>
-              {item.hint ? <Text color={index === popup.selected ? theme.textSecondary : theme.textFaint}>{item.hint}</Text> : null}
-            </Box>
-          ))}
-          <Text dimColor> tab/enter complete · esc dismiss</Text>
-        </Box>
-      ) : null}
-
-      {props.waitingPermission ? (
-        <Box paddingLeft={1}>
-          <Text color={theme.warning}>… resolve the approval above</Text>
-        </Box>
-      ) : null}
-
+    <Box flexDirection="column" marginTop={1} flexShrink={0}>
       <Box
         width="100%"
-        borderStyle="single"
-        borderColor={theme.surfaceBorder}
-        borderLeftColor={props.waitingPermission ? theme.warning : theme.accent}
+        borderStyle="round"
+        borderColor={props.waitingPermission ? theme.warning : props.busy ? theme.border : theme.accent}
+        borderDimColor={props.busy && !props.waitingPermission}
         paddingX={1}
       >
-        <Box width="100%" flexDirection="row">
-          <Box flexGrow={1} flexDirection="row" flexWrap="wrap">
-            <Text color={theme.textSecondary}>{"> "}</Text>
-            {value.length === 0 && !showBusyLine ? (
-              <Text color={theme.textFaint}>{props.placeholder ?? "ask anything"}</Text>
-            ) : (
-              <Text wrap="wrap">{renderedInput}</Text>
-            )}
-          </Box>
-          {value.length === 0 && !showBusyLine ? (
-            <Box justifyContent="flex-end" flexGrow={1}>
-              <Text color={theme.textFaint}>{props.modeHint ? `[${props.modeHint}]` : ""}</Text>
-            </Box>
-          ) : null}
-        </Box>
+        <Text color={props.busy ? "gray" : theme.accent}>› </Text>
+        <EditableText value={value} cursor={cursor} placeholder={props.placeholder ?? "ask anything"} />
+        {props.pendingCount > 0 ? <Text dimColor> · {props.pendingCount} queued</Text> : null}
       </Box>
 
       {props.attachments.length > 0 ? (
-        <Box paddingLeft={2} gap={1} flexWrap="wrap">
-          {props.attachments.map((chip) => (
-            <Text key={chip.id} color={theme.info}>
-              [{chip.kind === "image" ? "img" : "txt"} {chip.label}]
-            </Text>
-          ))}
-          <Text dimColor>(attached on send)</Text>
+        <Text dimColor>
+          {"  "}📎 {props.attachments.map((chip) => chip.label).join(" · ")}
+        </Text>
+      ) : null}
+
+      {props.busy && props.hint ? <Text dimColor>{"  "}{props.hint}</Text> : null}
+
+      {popup && visibleSuggestions.length > 0 ? (
+        <Box flexDirection="column" marginLeft={2}>
+          {visibleSuggestions.map((item, index) => {
+            const selected = suggestionStart + index === popup.selected;
+            return (
+              <Text key={`${item.label}_${index}`} color={selected ? theme.accent : undefined} dimColor={!selected}>
+                {selected ? "❯ " : "  "}
+                {item.label}
+                {item.hint ? <Text dimColor> — {item.hint}</Text> : null}
+              </Text>
+            );
+          })}
+          {suggestions.length > visibleSuggestions.length ? (
+            <Text dimColor>… {suggestions.length - visibleSuggestions.length} more</Text>
+          ) : null}
+          <Text dimColor>tab/enter complete · esc dismiss</Text>
         </Box>
       ) : null}
     </Box>
   );
 }
 
-function renderWithCursor(value: string, cursor: number): React.ReactNode[] {
-  const nodes: React.ReactNode[] = [];
-  if (value.length === 0) {
-    nodes.push(<Text key="cursor">▌</Text>);
-    return nodes;
-  }
+function EditableText({
+  value,
+  cursor,
+  placeholder
+}: {
+  value: string;
+  cursor: number;
+  placeholder: string;
+}): React.ReactElement {
+  const chars = characters(value);
+  const at = clampValue(cursor, 0, chars.length);
 
-  const head = value.slice(0, cursor);
-  const cursorChar = value[cursor] ?? "";
-  const tail = value.slice(cursor + (cursorChar ? 1 : 0));
-
-  if (head) nodes.push(<React.Fragment key="head">{head}</React.Fragment>);
-  if (cursorChar) {
-    nodes.push(
-      <Text key="cursorchar" inverse>
-        {cursorChar}
+  if (chars.length === 0) {
+    const placeholderChars = characters(placeholder);
+    return (
+      <Text>
+        <Text inverse>{placeholderChars[0] ?? " "}</Text>
+        <Text color="gray">{placeholderChars.slice(1).join("")}</Text>
       </Text>
     );
-  } else {
-    nodes.push(<Text key="endcursor">▌</Text>);
   }
-  if (tail) nodes.push(<React.Fragment key="tail">{tail}</React.Fragment>);
 
-  return nodes;
+  return (
+    <Text wrap="wrap">
+      {chars.slice(0, at).join("")}
+      <Text inverse>{chars[at] ?? " "}</Text>
+      {chars.slice(at + 1).join("")}
+    </Text>
+  );
 }
 
 export function pushInputHistory(history: string[], entry: string): string[] {

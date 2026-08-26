@@ -3,6 +3,7 @@ import type { ToolDefinition, ToolInvocationResult, ToolContext } from "../types
 import { AxiomError } from "../util/errors.js";
 import { resolveWithinRoot, truncateToolOutput } from "./common.js";
 import { applyExactEdits, countOccurrences, summarizeChanges } from "../util/patch.js";
+import { renderUnifiedDiff } from "../util/diff.js";
 import { guardBinaryFile } from "./common.js";
 
 interface EditOperationInput {
@@ -187,7 +188,8 @@ export const editTool: ToolDefinition = {
         filesChanged: [{ path: resolved.relative, kind: "edited" }],
         appliedCount: appliedResult.applied,
         additions: stats.additions,
-        deletions: stats.deletions
+        deletions: stats.deletions,
+        diff: renderUnifiedDiff(original, appliedResult.result, { filePath: resolved.relative })
       }
     };
   }
