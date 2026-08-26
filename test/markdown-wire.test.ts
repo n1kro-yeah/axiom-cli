@@ -27,7 +27,7 @@ describe("renderMarkdown", () => {
     expect(rendered.codeBlocks).toBe(1);
     expect(rendered.lines[0][0].text).toContain("[ts]");
     expect(rendered.lines[1][0].style).toBe("code");
-    expect(rendered.lines[2][0].text).toContain("╰────");
+    expect(rendered.lines[2][0].text).toContain("------");
   });
 
   it("converts lists into bullet lines", () => {
@@ -40,7 +40,7 @@ describe("renderMarkdown", () => {
 
   it("renders blockquotes with a marker", () => {
     const rendered = renderMarkdown("> quoted wisdom");
-    expect(rendered.lines[0][0].text).toBe("▌ ");
+    expect(rendered.lines[0][0].text).toBe("> ");
     expect(rendered.lines[0][1]?.text).toContain("quoted");
   });
 
@@ -48,7 +48,7 @@ describe("renderMarkdown", () => {
     const table = "| a | b |\n| --- | --- |\n| 1 | 2 |";
     const rendered = renderMarkdown(table);
     expect(rendered.lines).toHaveLength(2);
-    expect(rendered.lines[0].map((segment) => segment.text).join("")).toContain("│ a │ b │");
+    expect(rendered.lines[0].map((segment) => segment.text).join("")).toContain("| a | b |");
   });
 
   it("turns hr rules into dashes", () => {

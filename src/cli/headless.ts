@@ -84,7 +84,7 @@ export async function runHeadless(bundle: RuntimeBundle, options: HeadlessOption
               : event.level === "warn"
                 ? picocolors.yellow
                 : picocolors.dim;
-          process.stderr.write(`${colorize("ℹ")} ${event.text}\n`);
+          process.stderr.write(`${colorize("i")} ${event.text}\n`);
         }
         if (event.level === "error") collectedError = event.text;
         break;

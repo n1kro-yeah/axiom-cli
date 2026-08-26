@@ -375,7 +375,7 @@ export async function main(input: MainInput): Promise<number> {
   });
 
   for (const warning of bundle.warnings) {
-    process.stderr.write(`${picocolors.yellow("⚠")} ${warning}\n`);
+    process.stderr.write(`${picocolors.yellow("!")} ${warning}\n`);
   }
 
   if (promptText !== undefined) {

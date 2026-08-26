@@ -171,7 +171,7 @@ export const sessionCommands: SlashCommand[] = [
       if (skills.length === 0) return notice("no skills discovered (~/.axiom/skills or .axiom/skills)");
       const lines = skills.map(
         (skill) =>
-          `${skill.scope === "project" ? "◆" : "◇"} ${skill.name}: ${skill.description.split("\n")[0].slice(0, 90)}`
+          `${skill.scope === "project" ? "[P] " : "[G] "} ${skill.name}: ${skill.description.split("\n")[0].slice(0, 90)}`
       );
       return notice(lines.join("\n"));
     }
@@ -191,9 +191,9 @@ export const sessionCommands: SlashCommand[] = [
       const model = ctx.agent.modelReference;
       try {
         ctx.registry.resolveModelInfo(model);
-        lines.push(`model: ✓ ${model}`);
+        lines.push(`model: + ${model}`);
       } catch {
-        lines.push(`model: ✗ ${model} unresolvable`);
+        lines.push(`model: x ${model} unresolvable`);
       }
 
       const sessionMeta = await ctx.sessions.loadMeta(ctx.sessionId());
@@ -226,7 +226,7 @@ export const sessionCommands: SlashCommand[] = [
         const entries = Object.entries(global.mcp);
         if (entries.length === 0) return notice("no MCP servers configured");
         return notice(
-          entries.map(([key, config]) => `${config.enabled ? "●" : "○"} ${key} (${config.type})`).join("\n")
+          entries.map(([key, config]) => `${config.enabled ? "[x] " : "[ ] "} ${key} (${config.type})`).join("\n")
         );
       }
 

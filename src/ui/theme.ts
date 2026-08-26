@@ -136,10 +136,10 @@ export interface SpinnerFrames {
 }
 
 export const SPINNER_VARIANTS: Record<string, SpinnerFrames> = {
-  dots: { frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"], intervalMs: 80 },
+  dots: { frames: ["|", "/", "-", "\\"], intervalMs: 120 },
   line: { frames: ["|", "/", "-", "\\"], intervalMs: 130 },
-  pulse: { frames: ["●", "◐", "○", "◑"], intervalMs: 200 },
-  orbit: { frames: ["✶", "✸", "✹", "✺", "✹", "✷"], intervalMs: 120 }
+  pulse: { frames: ["*", "o", "*", "o"], intervalMs: 200 },
+  orbit: { frames: ["*", "+", "x", "+"], intervalMs: 120 }
 };
 
 export function statusColor(status: string, theme: Theme): string {

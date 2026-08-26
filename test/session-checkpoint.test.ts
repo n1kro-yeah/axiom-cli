@@ -109,7 +109,7 @@ describe("SessionStore", () => {
 
     expect(content).toContain("## User");
     expect(content).toContain("## Assistant");
-    expect(content).toContain("→ bash");
+    expect(content).toContain("-> bash");
   });
 
   it("deletes sessions including sidecar files", async () => {

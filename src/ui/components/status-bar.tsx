@@ -1,4 +1,4 @@
-﻿import { Box, Text } from "ink";
+import { Box, Text } from "ink";
 import { Fragment } from "react";
 import type { ReactNode } from "react";
 import type { PermissionMode } from "../../types.js";
@@ -74,9 +74,9 @@ export function StatusBar({ status }: { status: StatusBarData }): React.ReactEle
       <Text color={theme.textPrimary} bold>
         {tokens(status.usage.input)}
       </Text>
-      <Text dimColor> в†‘ </Text>
+      <Text dimColor> in </Text>
       <Text color={theme.ok}>{tokens(status.usage.output)}</Text>
-      <Text dimColor> в†“</Text>
+      <Text dimColor> out</Text>
       {status.usage.cacheRead > 0 ? (
         <>
           <Text dimColor> (</Text>
@@ -86,7 +86,7 @@ export function StatusBar({ status }: { status: StatusBarData }): React.ReactEle
       ) : null}
       {status.usage.costUsd > 0 ? (
         <>
-          <Text dimColor> В· </Text>
+          <Text dimColor> · </Text>
           <Text color={theme.warning} bold>
             ${status.usage.costUsd < 0.01 ? status.usage.costUsd.toFixed(4) : status.usage.costUsd.toFixed(3)}
           </Text>
@@ -142,7 +142,7 @@ export function StatusBar({ status }: { status: StatusBarData }): React.ReactEle
       <Box width="100%">
         <Box flexGrow={1} flexShrink={1} flexWrap="wrap" alignItems="flex-start">
           <ModelBadge modelRef={status.modelRef} />
-          <Text dimColor>{" В· "}</Text>
+          <Text dimColor>{" · "}</Text>
           <EffortBadge effort={status.effort} />
         </Box>
         <Box flexShrink={0} marginLeft={2} flexDirection="column" alignItems="flex-end">
@@ -150,7 +150,7 @@ export function StatusBar({ status }: { status: StatusBarData }): React.ReactEle
           {status.mcpConnected > 0 || status.mcpFailed > 0 ? (
             <Text>
               {status.mcpConnected > 0 ? <Text color={theme.ok}>mcp:{status.mcpConnected}</Text> : null}
-              {status.mcpConnected > 0 && status.mcpFailed > 0 ? <Text dimColor> В· </Text> : null}
+              {status.mcpConnected > 0 && status.mcpFailed > 0 ? <Text dimColor> · </Text> : null}
               {status.mcpFailed > 0 ? <Text color={theme.error}>{status.mcpFailed} failed</Text> : null}
             </Text>
           ) : null}
@@ -162,7 +162,7 @@ export function StatusBar({ status }: { status: StatusBarData }): React.ReactEle
       <Box flexWrap="wrap" marginTop={0}>
         {details.map((item, index) => (
           <Fragment key={index}>
-            {index > 0 ? <Text dimColor>{" В· "}</Text> : null}
+            {index > 0 ? <Text dimColor>{" · "}</Text> : null}
             {item}
           </Fragment>
         ))}
@@ -223,9 +223,9 @@ function ContextMeter({ window: win, used, exact }: { window: number; used: numb
       <Text color={color} bold>
         {`${percent}%`.padStart(4)}
       </Text>
-      <Text color={color}> в–ђ{"в–€".repeat(filled)}</Text>
-      <Text color="gray">{"в–‘".repeat(BAR_WIDTH - filled)}</Text>
-      <Text color={color}>в–Њ</Text>
+      <Text color={color} bold>
+        {"[" + "#".repeat(filled) + ".".repeat(BAR_WIDTH - filled) + "]"}
+      </Text>
       <Text dimColor> {tokens(used)}/{tokens(win)}</Text>
     </Text>
   );

@@ -304,14 +304,14 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
         borderDimColor={props.busy && !props.waitingPermission}
         paddingX={1}
       >
-        <Text color={props.busy ? "gray" : theme.accent}>› </Text>
+        <Text color={props.busy ? "gray" : theme.accent}>{"> "} </Text>
         <EditableText value={value} cursor={cursor} placeholder={props.placeholder ?? "ask anything"} />
         {props.pendingCount > 0 ? <Text dimColor> · {props.pendingCount} queued</Text> : null}
       </Box>
 
       {props.attachments.length > 0 ? (
         <Text dimColor>
-          {"  "}📎 {props.attachments.map((chip) => chip.label).join(" · ")}
+          {"  "}+ {props.attachments.map((chip) => chip.label).join(" · ")}
         </Text>
       ) : null}
 
@@ -323,14 +323,14 @@ export function InputPanel(props: InputPanelProps): React.ReactElement {
             const selected = suggestionStart + index === popup.selected;
             return (
               <Text key={`${item.label}_${index}`} color={selected ? theme.accent : undefined} dimColor={!selected}>
-                {selected ? "❯ " : "  "}
+                {selected ? "> " : "  "}
                 {item.label}
-                {item.hint ? <Text dimColor> — {item.hint}</Text> : null}
+                {item.hint ? <Text dimColor> - {item.hint}</Text> : null}
               </Text>
             );
           })}
           {suggestions.length > visibleSuggestions.length ? (
-            <Text dimColor>… {suggestions.length - visibleSuggestions.length} more</Text>
+            <Text dimColor>... {suggestions.length - visibleSuggestions.length} more</Text>
           ) : null}
           <Text dimColor>tab/enter complete · esc dismiss</Text>
         </Box>

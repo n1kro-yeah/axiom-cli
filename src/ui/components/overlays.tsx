@@ -20,7 +20,7 @@ export function ModelPickerOverlay(props: ModelPickerOverlayProps): React.ReactE
       const value = `${group.providerId}/${model.id}`;
       options.push({
         label: value,
-        hint: `${model.label} · ${Math.round(model.contextWindow / 1000)}k${model.recommended ? "  ★" : ""}`,
+        hint: `${model.label} · ${Math.round(model.contextWindow / 1000)}k${model.recommended ? "  *" : ""}`,
         value
       });
     }

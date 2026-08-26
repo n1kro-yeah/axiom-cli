@@ -48,7 +48,7 @@ export const coreCommands: SlashCommand[] = [
       const lines: string[] = [];
       for (const providerId of ctx.registry.configuredProviderIds()) {
         const configured = ctx.registry.isConfigured(providerId);
-        lines.push(`${configured ? "✓" : "·"} ${providerId.padEnd(12)} ${ctx.registry.providerLabel(providerId)}`);
+        lines.push(`${configured ? "+" : "·"} ${providerId.padEnd(12)} ${ctx.registry.providerLabel(providerId)}`);
       }
       lines.push("");
       lines.push("/provider add — add a custom endpoint interactively");
@@ -150,7 +150,7 @@ export const coreCommands: SlashCommand[] = [
         return error("usage: /mode <normal|accept|plan|bypass>");
       }
       ctx.ui.setMode(mode);
-      return notice(`/mode → ${mode}`);
+      return notice(`/mode -> ${mode}`);
     }
   },
   {

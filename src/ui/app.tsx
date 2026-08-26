@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useApp, useInput, useStdout, useWindowSize } from "ink";
 import type {
   AgentEvent,
@@ -396,7 +396,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
       lastCtrlCRef.current = now;
       if (agent.isRunning) {
         agent.abort("ctrl-c");
-        pushNotice("info", "stopping generation… press Ctrl+C again to quit");
+        pushNotice("info", "stopping generation... press Ctrl+C again to quit");
       } else {
         pushNotice("info", "press Ctrl+C again to quit");
       }
@@ -482,7 +482,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
   }, []);
 
   const lastErrorText =
-    status === "error" ? "the last turn failed — see transcript above" : null;
+    status === "error" ? "the last turn failed - see transcript above" : null;
 
   return (
     <ThemeContext.Provider value={themeValue}>
@@ -507,7 +507,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
               config.mutateGlobal((draft) => {
                 draft.model = value;
               });
-              pushNotice("info", `model → ${value}`);
+              pushNotice("info", `model -> ${value}`);
               setOverlay({ kind: "none" });
             }}
           />
@@ -570,7 +570,7 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
               config.mutateGlobal((draft) => {
                 draft.language = value as "en" | "ru";
               });
-              pushNotice("info", `language → ${value} (restart to fully apply)`);
+              pushNotice("info", `language -> ${value} (restart to fully apply)`);
               setOverlay({ kind: "none" });
             }}
           />
@@ -584,14 +584,14 @@ export function AxiomApp(props: { runtime: TuiRuntime }): React.ReactElement {
                 heading: "Keys",
                 entries: [
                   { keys: "enter", description: "send message / accept completion" },
-                  { keys: "↑ / ↓", description: "input history · navigate menus" },
+                  { keys: "up / down", description: "input history · navigate menus" },
                   { keys: "/", description: "slash commands" },
                   { keys: "@", description: "fuzzy file reference" },
                   { keys: "tab", description: "complete popup selection" },
                   { keys: "shift+tab", description: "cycle permission mode" },
                   { keys: "esc", description: "stop generation · close overlays" },
                   { keys: "ctrl+v", description: "attach clipboard image" },
-                  { keys: "ctrl+c ×2", description: "quit" }
+                  { keys: "ctrl+c x2", description: "quit" }
                 ]
               },
               {

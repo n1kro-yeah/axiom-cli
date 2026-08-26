@@ -47,7 +47,7 @@ const PRESETS: PresetEntry[] = [
   { label: "DeepSeek", value: "deepseek", baseUrl: "https://api.deepseek.com/v1", providerType: "openai", needsKey: true, keyEnv: "DEEPSEEK_API_KEY", defaultModel: "deepseek-chat" },
   { label: "Ollama (local)", value: "ollama", baseUrl: "http://localhost:11434/v1", providerType: "openai", needsKey: false, defaultModel: "qwen3-coder" },
   { label: "LM Studio (local)", value: "lmstudio", baseUrl: "http://localhost:1234/v1", providerType: "openai", needsKey: false, defaultModel: "openai/gpt-oss-20b" },
-  { label: "Custom URL…", value: "__custom__", baseUrl: "", providerType: "openai", needsKey: true }
+  { label: "Custom URL...", value: "__custom__", baseUrl: "", providerType: "openai", needsKey: true }
 ];
 
 export function detectProviderType(url: string): "anthropic" | "openai" | "gemini" {
@@ -100,7 +100,7 @@ async function probeConnection(
         return { ok: true, detail: modelCount > 0 ? `connected · ${modelCount} models listed` : "connected" };
       }
       if (response.status === 401 || response.status === 403) {
-        return { ok: false, detail: `auth rejected (HTTP ${response.status}) — check the API key` };
+        return { ok: false, detail: `auth rejected (HTTP ${response.status}) - check the API key` };
       }
       return { ok: false, detail: `HTTP ${response.status}` };
     }
@@ -160,7 +160,7 @@ export function ProviderWizard(props: ProviderWizardProps): React.ReactElement {
 
       const probe = await probeConnection(draft.baseUrl, draft.type, draft.apiKey);
       if (probe.ok) {
-        setNoticeText(`✓ ${draft.id} added and verified (${probe.detail}). Switch with /model ${draft.id}/<model>.`);
+        setNoticeText(`+ ${draft.id} added and verified (${probe.detail}). Switch with /model ${draft.id}/<model>.`);
         props.onCancel();
       } else {
         setNoticeText(`saved "${draft.id}", but the endpoint did not respond: ${probe.detail}`);
@@ -172,7 +172,7 @@ export function ProviderWizard(props: ProviderWizardProps): React.ReactElement {
   if (step.kind === "verifying") {
     return (
       <Box flexDirection="column" borderStyle="round" borderColor={theme.overlayBorder} paddingX={1}>
-        <Text color={theme.accentBright}>saving & probing {step.draft.baseUrl} …</Text>
+        <Text color={theme.accentBright}>saving & probing {step.draft.baseUrl} ...</Text>
       </Box>
     );
   }
@@ -181,7 +181,7 @@ export function ProviderWizard(props: ProviderWizardProps): React.ReactElement {
     return (
       <Box flexDirection="column">
         <OverlayPicker
-          title="Add provider — choose a preset"
+          title="Add provider - choose a preset"
           options={presetOptions}
           filterable
           visibleCount={11}
@@ -241,7 +241,7 @@ export function ProviderWizard(props: ProviderWizardProps): React.ReactElement {
         validator={(value) => validateName(value)}
         hint={
           props.knownProviderIds.includes(suggestedId)
-            ? "⚠ this id already exists and will be overwritten"
+            ? "! this id already exists and will be overwritten"
             : "enter confirm · esc back"
         }
         onSubmit={(value) =>
@@ -331,7 +331,7 @@ export function ProviderWizard(props: ProviderWizardProps): React.ReactElement {
 
   return (
     <Box borderStyle="round" borderColor={theme.danger} paddingX={1}>
-      <Text color={theme.danger}>wizard state error — press esc</Text>
+      <Text color={theme.danger}>wizard state error - press esc</Text>
     </Box>
   );
 }

@@ -87,7 +87,7 @@ export function OverlayPicker(props: OverlayPickerProps): React.ReactElement {
             return (
               <Box key={`${option.value}_${index}`} width="100%">
                 <Text color={selected ? theme.accentBright : theme.textSecondary} bold={selected}>
-                  {selected ? "› " : "  "}
+                  {selected ? "> " : "  "}
                   {option.label}
                 </Text>
               </Box>
@@ -97,7 +97,7 @@ export function OverlayPicker(props: OverlayPickerProps): React.ReactElement {
           return (
             <Box key={`${option.value}_${index}`} width="100%" justifyContent="space-between">
               <Text color={selected ? theme.accentBright : theme.textSecondary} bold={selected}>
-                {selected ? "› " : "  "}
+                {selected ? "> " : "  "}
                 {option.label}
               </Text>
               <Text color={selected ? theme.textSecondary : theme.textFaint}>{option.hint}</Text>
@@ -110,7 +110,7 @@ export function OverlayPicker(props: OverlayPickerProps): React.ReactElement {
 
       <Box marginTop={0}>
         <Text dimColor>
-          ↑↓ navigate · enter select{props.filterable ? " · type to filter" : ""} · esc close
+          up/down navigate · enter select{props.filterable ? " · type to filter" : ""} · esc close
         </Text>
       </Box>
     </Box>

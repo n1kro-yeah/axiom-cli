@@ -1,4 +1,4 @@
-﻿import { Box, Static, Text, useWindowSize } from "ink";
+import { Box, Static, Text, useWindowSize } from "ink";
 import { memo, useEffect, useMemo, useState } from "react";
 import { clipTextToRows, firstMutableBubbleIndex } from "../transcript.js";
 import type { AssistantBubble, Bubble, DiffRow, ToolBubble } from "../transcript.js";
@@ -7,7 +7,7 @@ import { renderMarkdown } from "../markdown.js";
 import { computeLineDiff } from "../../util/diff.js";
 import { Logo } from "./logo.js";
 
-const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const SPINNER_FRAMES = ["|", "/", "-", "\\"];
 
 function Spinner(): React.ReactElement {
   const { theme } = useTheme();
@@ -87,7 +87,7 @@ function UserView({ bubble }: { bubble: Extract<Bubble, { kind: "user" }> }): Re
     <Box flexDirection="column" marginTop={1}>
       <Text>
         <Text color={theme.accent} bold>
-          вЂє{" "}
+          {"> "}
         </Text>
         <Text color={theme.textPrimary} bold wrap="wrap">
           {firstLine}
@@ -96,7 +96,7 @@ function UserView({ bubble }: { bubble: Extract<Bubble, { kind: "user" }> }): Re
       {rest ? (
         <Box paddingLeft={2}>
           <Text dimColor wrap="wrap">
-            {rest.length > 300 ? `${rest.slice(0, 300)}вЂ¦` : rest}
+            {rest.length > 300 ? `${rest.slice(0, 300)}...` : rest}
           </Text>
         </Box>
       ) : null}
@@ -165,7 +165,7 @@ const AssistantView = memo(function AssistantView({
 
 const ToolView = memo(function ToolView({ bubble }: { bubble: ToolBubble }): React.ReactElement {
   const { theme } = useTheme();
-  const mark = bubble.state === "running" ? "в—Њ" : bubble.state === "ok" ? "в—Џ" : "вњ—";
+  const mark = bubble.state === "running" ? "..." : bubble.state === "ok" ? "+" : "x";
   const color =
     bubble.state === "error" ? theme.error : bubble.state === "denied" ? theme.warning : bubble.state === "ok" ? theme.ok : theme.warning;
 
@@ -210,7 +210,7 @@ const ToolView = memo(function ToolView({ bubble }: { bubble: ToolBubble }): Rea
         <Box flexDirection="column" marginLeft={3}>
           {bubble.preview.map((line, index) => (
             <Text key={index} dimColor={bubble.preview !== null && (index < bubble.preview.length - 1 || !bubble.isError)} color={bubble.preview !== null && index === bubble.preview.length - 1 && bubble.isError ? theme.error : undefined} wrap="truncate-end">
-              {line.length > 130 ? `${line.slice(0, 127)}вЂ¦` : line}
+              {line.length > 130 ? `${line.slice(0, 127)}...` : line}
             </Text>
           ))}
         </Box>
@@ -242,7 +242,7 @@ function DiffRowsView({ rows }: { rows: DiffRow[] }): React.ReactElement {
           {row.tag === "@" ? row.text : `${row.tag} ${row.text}`.slice(0, 160)}
         </Text>
       ))}
-      {rows.length > visible.length ? <Text dimColor>вЂ¦ {rows.length - visible.length} more</Text> : null}
+      {rows.length > visible.length ? <Text dimColor>... {rows.length - visible.length} more</Text> : null}
     </Box>
   );
 }

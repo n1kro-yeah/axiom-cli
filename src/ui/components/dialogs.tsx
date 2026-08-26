@@ -34,7 +34,7 @@ export function PermissionDialog(props: PermissionDialogProps): React.ReactEleme
     <Box flexDirection="column" borderStyle="round" borderColor={theme.warning} paddingX={1} paddingY={0} marginTop={1}>
       <Box gap={2}>
         <Text bold color={riskColor}>
-          ⚠ {props.request.title}
+          ! {props.request.title}
         </Text>
         <Text dimColor>[{riskTag}]</Text>
       </Box>
@@ -42,7 +42,7 @@ export function PermissionDialog(props: PermissionDialogProps): React.ReactEleme
       <Box flexDirection="column" paddingX={2} marginY={0}>
         {props.request.summary.map((line, index) => (
           <Text key={index} wrap="truncate">
-            {line.length > 110 ? `${line.slice(0, 107)}…` : line}
+            {line.length > 110 ? `${line.slice(0, 107)}...` : line}
           </Text>
         ))}
       </Box>
@@ -109,7 +109,7 @@ export function ConfirmDialog(props: ConfirmDialogProps): React.ReactElement {
 
 export function NoticeLine({ level, text }: { level: "info" | "warn" | "error"; text: string }): React.ReactElement {
   const { theme } = useTheme();
-  const glyph = level === "error" ? "✗" : level === "warn" ? "⚠" : "ℹ";
+  const glyph = level === "error" ? "x" : level === "warn" ? "!" : "i";
   const color = level === "error" ? theme.danger : level === "warn" ? theme.warning : theme.info;
 
   return (

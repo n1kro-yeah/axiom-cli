@@ -43,12 +43,12 @@ export function renderMarkdown(source: string): RenderedMarkdown {
         index += 1;
       }
       index += 1;
-      out.push([{ text: "╭─" + (language ? `[${language}]` : "[code]") + "─", style: "code" }]);
+      out.push([{ text: "[" + (language ? `[${language}]` : "[code]") + "-", style: "code" }]);
       if (body.length === 0) {
         out.push([{ text: " (empty)", style: "code" }]);
       }
       for (const bodyLine of body) out.push(bodyLine);
-      out.push([{ text: "╰────", style: "code" }]);
+      out.push([{ text: "------", style: "code" }]);
       codeBlocks += 1;
       continue;
     }
@@ -59,7 +59,7 @@ export function renderMarkdown(source: string): RenderedMarkdown {
       const text = headingMatch[2]?.trim() ?? "";
       const style: InlineStyle = level <= 1 ? "heading1" : level === 2 ? "heading2" : "heading3";
       const underline =
-        style === "heading1" ? "═".repeat(Math.min(text.length + 2, 60)) : style === "heading2" ? "─".repeat(Math.min(text.length + 2, 60)) : "";
+        style === "heading1" ? "=".repeat(Math.min(text.length + 2, 60)) : style === "heading2" ? "-".repeat(Math.min(text.length + 2, 60)) : "";
       out.push([{ text: text.toUpperCase() === text && level >= 3 ? text : text, style }]);
       if (underline) out.push([{ text: underline, style: "hr" }]);
       index += 1;
@@ -67,7 +67,7 @@ export function renderMarkdown(source: string): RenderedMarkdown {
     }
 
     if (/^\s*([-*_])\s*\1\s*\1[\s\-*_]*$/.test(line)) {
-      out.push([{ text: "─".repeat(40), style: "hr" }]);
+      out.push([{ text: "-".repeat(40), style: "hr" }]);
       index += 1;
       continue;
     }
@@ -76,7 +76,7 @@ export function renderMarkdown(source: string): RenderedMarkdown {
       const quoteText = line.replace(/^\s*>\s?/, "");
       const segments = parseInlineSegments(quoteText);
       out.push([
-        { text: "▌ ", style: "quote" },
+        { text: "> ", style: "quote" },
         ...segments.map((segment) => ({ ...segment, style: segment.style === "plain" ? ("quote" as InlineStyle) : segment.style }))
       ]);
       index += 1;
@@ -87,7 +87,7 @@ export function renderMarkdown(source: string): RenderedMarkdown {
     if (listMatch) {
       const indent = Math.floor((listMatch[1]?.length ?? 0) / 2);
       const markerRaw = listMatch[2] ?? "-";
-      const marker = /\d/.test(markerRaw) ? `${markerRaw}` : "•";
+      const marker = /\d/.test(markerRaw) ? `${markerRaw}` : "*";
       const prefix = `${" ".repeat(indent * 2)}${marker} `;
       out.push([
         { text: prefix, style: "listMarker" },
@@ -101,12 +101,12 @@ export function renderMarkdown(source: string): RenderedMarkdown {
       const cells = splitTableRow(line);
       const isSeparatorRow = cells.every((cell) => /^\s*:?-{2,}:?\s*$/.test(cell));
       if (!isSeparatorRow) {
-        const rowSegments: SegmentLine = [{ text: "│ ", style: "tableCell" }];
+        const rowSegments: SegmentLine = [{ text: "| ", style: "tableCell" }];
         cells.forEach((cell, cellIndex) => {
-          if (cellIndex > 0) rowSegments.push({ text: " │ ", style: "tableCell" });
+          if (cellIndex > 0) rowSegments.push({ text: " | ", style: "tableCell" });
           rowSegments.push(...parseInlineSegments(cell.trim()));
         });
-        rowSegments.push({ text: " │", style: "tableCell" });
+        rowSegments.push({ text: " |", style: "tableCell" });
         out.push(rowSegments);
       }
       index += 1;

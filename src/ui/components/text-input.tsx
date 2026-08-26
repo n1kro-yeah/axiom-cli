@@ -115,7 +115,7 @@ export function TextInput(props: TextInputProps): React.ReactElement {
           <>
             <Text color={theme.accentBright}>{"> "}</Text>
             <Text dimColor>{props.placeholder}</Text>
-            <Text dimColor>▌</Text>
+            <Text dimColor>|</Text>
           </>
         ) : (
           <Text wrap="truncate-end">
@@ -127,7 +127,7 @@ export function TextInput(props: TextInputProps): React.ReactElement {
         )}
       </Box>
       {errorText ? (
-        <Text color={theme.danger}>✗ {errorText}</Text>
+        <Text color={theme.danger}>x {errorText}</Text>
       ) : null}
       {props.hint ? <Text dimColor>{props.hint}</Text> : <Text dimColor>enter confirm · esc cancel</Text>}
     </Box>

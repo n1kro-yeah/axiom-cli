@@ -246,7 +246,7 @@ export class SessionStore {
             lines.push(part.text);
             break;
           case "tool_call":
-            lines.push(`\`\`\`\n→ ${part.name} ${JSON.stringify(part.input).slice(0, 600)}\n\`\`\``);
+            lines.push(`\`\`\`\n-> ${part.name} ${JSON.stringify(part.input).slice(0, 600)}\n\`\`\``);
             break;
           case "tool_result":
             lines.push(`\`\`\`\n[${part.name}] ${part.isError ? "ERROR" : "ok"}\n${part.content.slice(0, 2000)}\n\`\`\``);
