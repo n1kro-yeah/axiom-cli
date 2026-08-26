@@ -63,6 +63,12 @@ export class AxiomTui {
       runtime.paths.projectRoot
     );
 
+    if (options.altScreen) {
+      this.tui = new TuiAltScreen(terminal);
+    } else {
+      this.tui = new TuiMainScreen(terminal);
+    }
+
     const editorTheme = {
       borderColor: (text: string) => this.ansi.accent(text),
       selectList: {
@@ -76,12 +82,6 @@ export class AxiomTui {
 
     this.editor = new Editor(this.tui, editorTheme, { paddingX: 1 });
     this.editor.setAutocompleteProvider(autocomplete);
-
-    if (options.altScreen) {
-      this.tui = new TuiAltScreen(terminal);
-    } else {
-      this.tui = new TuiMainScreen(terminal);
-    }
 
     this.buildLayout();
     this.wireEditor();

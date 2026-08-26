@@ -6,6 +6,7 @@ import { makeAnsiTheme } from "../src/ui/pi/ansi.js";
 import { applyAgentEvents, bubblesFromMessages } from "../src/ui/transcript.js";
 import type { AgentEvent } from "../src/types.js";
 import { createMessageId } from "../src/types.js";
+import { Editor, VStack, type TUI } from "@earendil-works/pi-tui";
 
 const ansi = makeAnsiTheme("violet");
 const strip = (text: string) => text.replace(/\x1b\[[0-9;]*m/g, "");
@@ -171,5 +172,73 @@ describe("pi logo component", () => {
     for (const char of lines) {
       expect(char.charCodeAt(0)).toBeLessThan(0x2500);
     }
+  });
+});
+
+describe("pi editor inside dock layout", () => {
+  function makeFakeTui(): TUI {
+    return {
+      terminal: { rows: 30, columns: 100 },
+      mode: "alt"
+    } as unknown as TUI;
+  }
+
+  it("renders the editor without touching an uninitialized tui", () => {
+    const editor = new Editor(makeFakeTui(), {
+      borderColor: (text) => text,
+      selectList: {
+        selectedPrefix: (text) => text,
+        selectedText: (text) => text,
+        description: (text) => text,
+        scrollInfo: (text) => text,
+        noMatch: (text) => text
+      }
+    }, { paddingX: 1 });
+
+    editor.focused = true;
+    const lines = editor.render(100);
+    expect(lines.length).toBeGreaterThan(0);
+  });
+
+  it("renders the dock vstack (pending + status + editor) end to end", () => {
+    const editor = new Editor(makeFakeTui(), {
+      borderColor: (text) => text,
+      selectList: {
+        selectedPrefix: (text) => text,
+        selectedText: (text) => text,
+        description: (text) => text,
+        scrollInfo: (text) => text,
+        noMatch: (text) => text
+      }
+    }, { paddingX: 1 });
+
+    const status = new StatusComponent(ansi);
+    status.update({
+      modelRef: "anthropic/claude-sonnet-4-5",
+      effort: "medium",
+      thinking: true,
+      mode: "normal",
+      inputTokens: 100,
+      outputTokens: 10,
+      cacheReadTokens: 0,
+      costUsd: 0,
+      contextWindow: 200000,
+      turnMs: null,
+      sessionMs: 5000,
+      bypass: false,
+      busy: false,
+      mcpConnected: 0,
+      queueDepth: 0,
+      cwd: "."
+    });
+
+    const dock = new VStack([
+      { component: status, shrink: 1, minSize: 1 },
+      { component: editor, shrink: 1, minSize: 3 }
+    ]);
+
+    const lines = dock.render(100);
+    expect(lines.length).toBeGreaterThan(3);
+    expect(renderLines(dock).join("\n")).toContain("claude-sonnet-4-5");
   });
 });
