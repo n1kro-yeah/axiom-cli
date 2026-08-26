@@ -1,4 +1,5 @@
 import { Box, Container, Input, SelectList, Text, TruncatedText } from "@earendil-works/pi-tui";
+import type { Component } from "@earendil-works/pi-tui";
 import type { TUI } from "@earendil-works/pi-tui";
 import type { PermissionDecision, PermissionRequest } from "../../types.js";
 import type { AnsiTheme } from "./ansi.js";
@@ -25,12 +26,34 @@ export function makeSelectListTheme(ansi: AnsiTheme): SelectListThemeLike {
   };
 }
 
+export interface OverlayContext {
+  tui: TUI;
+  ansi: AnsiTheme;
+  restoreFocus: () => void;
+}
+
+function mount(context: OverlayContext, panel: Container, options: Parameters<TUI["showOverlay"]>[1], focusTarget?: Component): OverlayHandle {
+  const handle = context.tui.showOverlay(panel, options);
+  handle.focus();
+  if (focusTarget) context.tui.setFocus(focusTarget);
+
+  let closed = false;
+  return {
+    close() {
+      if (closed) return;
+      closed = true;
+      handle.hide();
+      context.restoreFocus();
+    }
+  };
+}
+
 export function showPermissionOverlay(
-  tui: TUI,
+  context: OverlayContext,
   request: PermissionRequest,
-  ansi: AnsiTheme,
   onDecision: (decision: PermissionDecision) => void
 ): OverlayHandle {
+  const ansi = context.ansi;
   const riskTag = ansi.muted(`[${request.risk.toUpperCase()}]`);
   const panel = new Box(1, 0);
   panel.addChild(new Text(`${ansi.warning(`! ${request.title}`)} ${riskTag}`));
@@ -49,6 +72,8 @@ export function showPermissionOverlay(
     makeSelectListTheme(ansi)
   );
 
+  const handle = mount(context, panel, { anchor: "bottom-center", margin: 1 }, list);
+
   list.onSelect = (item) => {
     handle.close();
     onDecision(item.value as PermissionDecision);
@@ -58,19 +83,17 @@ export function showPermissionOverlay(
     onDecision("deny");
   };
 
-  panel.addChild(list);
-  const handle = wrapHandle(tui.showOverlay(panel, { anchor: "bottom-center", margin: 1 }));
   return handle;
 }
 
 export function showConfirmOverlay(
-  tui: TUI,
+  context: OverlayContext,
   title: string,
-  ansi: AnsiTheme,
   onAnswer: (yes: boolean) => void
 ): OverlayHandle {
+  const ansi = context.ansi;
   const panel = new Box(1, 0);
-  panel.addChild(new Text(`${ansi.warning(`? ${title}`)}`));
+  panel.addChild(new Text(ansi.warning(`? ${title}`)));
   const list = new SelectList(
     [
       { value: "yes", label: "Yes", description: "confirm" },
@@ -79,6 +102,9 @@ export function showConfirmOverlay(
     2,
     makeSelectListTheme(ansi)
   );
+
+  const handle = mount(context, panel, { anchor: "center" }, list);
+
   list.onSelect = (item) => {
     handle.close();
     onAnswer(item.value === "yes");
@@ -87,18 +113,17 @@ export function showConfirmOverlay(
     handle.close();
     onAnswer(false);
   };
-  panel.addChild(list);
-  const handle = wrapHandle(tui.showOverlay(panel, { anchor: "center" }));
+
   return handle;
 }
 
 export function showPickerOverlay(
-  tui: TUI,
+  context: OverlayContext,
   title: string,
   items: Array<{ key: string; label: string; hint?: string }>,
-  ansi: AnsiTheme,
   onSelect: (key: string) => void
 ): OverlayHandle {
+  const ansi = context.ansi;
   const panel = new Box(1, 0);
   panel.addChild(new Text(ansi.accentBright(title)));
   const list = new SelectList(
@@ -106,6 +131,9 @@ export function showPickerOverlay(
     10,
     makeSelectListTheme(ansi)
   );
+
+  const handle = mount(context, panel, { anchor: "center", maxHeight: "70%" }, list);
+
   list.onSelect = (item) => {
     handle.close();
     onSelect(item.value);
@@ -114,41 +142,31 @@ export function showPickerOverlay(
     handle.close();
     onSelect("");
   };
-  panel.addChild(list);
-  const handle = wrapHandle(tui.showOverlay(panel, { anchor: "center", maxHeight: "70%" }));
+
   return handle;
 }
 
 export function showTextInputOverlay(
-  tui: TUI,
+  context: OverlayContext,
   title: string,
-  ansi: AnsiTheme,
-  options: { mask?: boolean } = {},
+  options: { mask?: boolean; initialValue?: string } = {},
   onSubmit: (value: string | null) => void
 ): OverlayHandle {
+  const ansi = context.ansi;
   const panel = new Box(1, 0);
   panel.addChild(new Text(ansi.accentBright(title)));
   const input = new Input();
+  if (options.initialValue) input.setValue(options.initialValue);
+
+  const handle = mount(context, panel, { anchor: "center", width: 64 }, input);
+
   input.onSubmit = (value) => {
     handle.close();
     onSubmit(value.trim().length > 0 ? value.trim() : null);
   };
-  panel.addChild(input);
-  const handle = wrapHandle(tui.showOverlay(panel, { anchor: "center", width: 60 }));
-  tui.setFocus(input);
+  panel.addChild(new Text(ansi.faint("enter confirm - esc cancel"), 0, 0));
+
   return handle;
-}
-
-interface FocusableLike {
-  focused: boolean;
-}
-
-function wrapHandle(raw: { hide(): void }): OverlayHandle {
-  return {
-    close() {
-      raw.hide();
-    }
-  };
 }
 
 export class QueuedNoticeComponent extends Container {
