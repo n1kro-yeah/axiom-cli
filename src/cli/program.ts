@@ -7,10 +7,8 @@ import type { HeadlessOutputFormat } from "./headless.js";
 import { CommandRegistry } from "../commands/registry.js";
 import { coreCommands } from "../commands/core.js";
 import { sessionCommands } from "../commands/session.js";
-import { AxiomApp } from "../ui/app.js";
-import type { TuiRuntime } from "../ui/app.js";
-import { render } from "ink";
-import React from "react";
+import { AxiomTui } from "../ui/pi/app.js";
+import type { TuiRuntime } from "../ui/app-types.js";
 import { performUndo, performRedo } from "../session/checkpoint.js";
 
 export const VERSION = "0.1.0";
@@ -243,12 +241,11 @@ async function runTui(bundle: RuntimeBundle, parsed: ParsedArgs): Promise<number
     void bundle.sessions.renameSession(bundle.sessionId, titleFlag);
   }
 
-  const instance = render(React.createElement(AxiomApp, { runtime: tuiRuntime }), {
-    exitOnCtrlC: false,
-    patchConsole: true
-  });
+  const altScreen = !parsed.flags.has("main");
 
-  await instance.waitUntilExit();
+  const axiomTui = new AxiomTui(tuiRuntime, { altScreen });
+  await axiomTui.start();
+
   if (!exited) {
     await shutdown(bundle);
   }

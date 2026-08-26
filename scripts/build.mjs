@@ -5,23 +5,6 @@ import { join } from "node:path";
 const outfile = "dist/index.js";
 const sourcemapOutfile = `${outfile}.map`;
 
-const emptyDevtools = {
-  name: "empty-devtools",
-  setup(buildApi) {
-    buildApi.onResolve({ filter: /^react-devtools-core$/ }, () => ({
-      path: "react-devtools-core",
-      namespace: "stub-devtools"
-    }));
-    buildApi.onLoad({ filter: /.*/, namespace: "stub-devtools" }, () => ({
-      contents: [
-        "export function initialize() {}",
-        "export default { initialize };"
-      ].join("\n"),
-      loader: "js"
-    }));
-  }
-};
-
 async function previousBundleSize() {
   try {
     const info = await stat(outfile);
@@ -60,17 +43,10 @@ async function main() {
     minify: false,
     keepNames: true,
     legalComments: "none",
-    plugins: [emptyDevtools],
     define: {
       "process.env.NODE_ENV": '"production"'
     },
-    external: ["fsevents"],
-    banner: {
-      js: [
-        "import { createRequire as __axiomCreateRequire } from 'node:module';",
-        "const require = __axiomCreateRequire(import.meta.url);"
-      ].join("\n")
-    }
+    external: ["fsevents"]
   });
 
   if (result.errors.length > 0) {

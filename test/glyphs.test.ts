@@ -59,28 +59,38 @@ describe("terminal glyph safety", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("uses only ASCII frames for the spinner", async () => {
-    const src = readFileSync("src/ui/components/transcript.tsx", "utf8");
-    const match = /SPINNER_FRAMES = \[([^\]]+)\]/.exec(src);
+  it("uses only ASCII frames for the spinner", () => {
+    const src = readFileSync("src/ui/pi/transcript-component.ts", "utf8");
+    const match = /const SPIN = \[([^\]]+)\]/.exec(src);
     expect(match).not.toBeNull();
-    const frames = match?.[1] ?? "";
-    for (const char of frames) {
+    for (const char of match?.[1] ?? "") {
       expect(char.charCodeAt(0)).toBeLessThan(0x80);
     }
-    expect(frames).toContain("|");
-    expect(frames).toContain("/");
+    expect(match?.[1]).toContain("|");
+    expect(match?.[1]).toContain("/");
   });
 
   it("renders the context meter with plain ASCII blocks", () => {
-    const src = readFileSync("src/ui/components/status-bar.tsx", "utf8");
+    const src = readFileSync("src/ui/pi/status-component.ts", "utf8");
     expect(src).toContain('"#"');
     expect(src).toContain('"."');
     expect(src).not.toMatch(/[█░▐▌]/);
   });
 
   it("keeps the logo text-only", () => {
-    const src = readFileSync("src/ui/components/logo.tsx", "utf8");
+    const src = readFileSync("src/ui/pi/logo-component.ts", "utf8");
     expect(src).not.toMatch(/[◆█╔═╗╱╲]/);
     expect(src).toContain("axiom");
+  });
+
+  it("does not depend on react or ink anymore", () => {
+    const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const all = { ...pkg.dependencies, ...pkg.devDependencies };
+    expect(all["ink"]).toBeUndefined();
+    expect(all["react"]).toBeUndefined();
+    expect(all["@types/react"]).toBeUndefined();
   });
 });
